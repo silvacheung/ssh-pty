@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 # 检查是否启动
 IS_ACTIVE=$(systemctl is-active containerd)
 IS_ENABLED=$(systemctl is-enabled containerd)
@@ -10,22 +9,22 @@ if [[ "$IS_ACTIVE" == "active" && "$IS_ENABLED" == "enabled" ]]; then
 fi
 
 # 创建文件夹
-rm -r ~/.k_8_s/cri
-mkdir -p ~/.k_8_s/cri
+if [ ! -d ~/.k_8_s/cri ]; then
+	mkdir -p ~/.k_8_s/cri
+fi
 
 # 安装containerd
-CONTAINERD_OS=linux
-CONTAINERD_ARCH=amd64
-CONTAINERD_VERSION=1.7.13 # 1.7.15
+curl -L -o ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
+#curl -L -o ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz https://kubernetes-release.pek3b.qingstor.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
 
-# curl -L -o ~/.k_8_s/cri/containerd-${CONTAINERD_VERSION}-${CONTAINERD_OS}-${CONTAINERD_ARCH}.tar.gz https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-${CONTAINERD_OS}-${CONTAINERD_ARCH}.tar.gz
-curl -L -o ~/.k_8_s/cri/containerd-${CONTAINERD_VERSION}-${CONTAINERD_OS}-${CONTAINERD_ARCH}.tar.gz https://kubernetes-release.pek3b.qingstor.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-${CONTAINERD_OS}-${CONTAINERD_ARCH}.tar.gz
-
-tar Cxzvf /usr/local ~/.k_8_s/cri/containerd-${CONTAINERD_VERSION}-${CONTAINERD_OS}-${CONTAINERD_ARCH}.tar.gz
+tar Cxzvf /usr/local ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
 
 # containerd配置文件
-CONTAINERD_TOML_FILE=/etc/containerd/config.toml
-cat >>$CONTAINERD_TOML_FILE<<EOF
+if [ -e /etc/containerd/config.toml ]; then
+	cat /dev/null > /etc/containerd/config.toml
+fi
+
+cat >>/etc/containerd/config.toml<<EOF
 version = 2
 root = "/var/lib/containerd"
 state = "/run/containerd"
@@ -151,34 +150,24 @@ if [[ "$IS_ACTIVE" == "active" && "$IS_ENABLED" == "enabled" ]]; then
 	echo "containerd OK!"
 else
 	echo "containerd Bad!"
+	exit 1
 fi
 
 # 安装runc
-RUNC_ARCH=amd64
-RUNC_VERSION=1.1.12
+curl -L -o ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} https://github.com/opencontainers/runc/releases/download/v{{ .Configs.Runc.Version }}/runc.{{ .Configs.Runc.Arch }}
+#curl -L -o ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} https://kubernetes-release.pek3b.qingstor.com/opencontainers/runc/releases/download/v{{ .Configs.Runc.Version }}/runc.{{ .Configs.Runc.Arch }}
 
-# curl -L -o ~/.k_8_s/cri/runc.${RUNC_ARCH} https://github.com/opencontainers/runc/releases/download/v${RUNC_VERSION}/runc.${RUNC_ARCH}
-curl -L -o ~/.k_8_s/cri/runc.${RUNC_ARCH} https://kubernetes-release.pek3b.qingstor.com/opencontainers/runc/releases/download/v${RUNC_VERSION}/runc.${RUNC_ARCH}
-
-install -m 755 ~/.k_8_s/cri/runc.${RUNC_ARCH} /usr/local/sbin/runc
+install -m 755 ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} /usr/local/sbin/runc
 
 # 安装CNI插件
-#CNI_PLG_OS=linux
-#CNI_PLG_ARCH=amd64
-#CNI_PLG_VERSION=1.4.1
+curl -L -o ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz https://github.com/containernetworking/plugins/releases/download/v{{ .Configs.CNIPlugins.Version }}/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz
+#curl -L -o ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz https://containernetworking.pek3b.qingstor.com/plugins/releases/download/v{{ .Configs.CNIPlugins.Version }}/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-{{ .Configs.CNIPlugins.Version }}.tgz
 
-# curl -L -o ~/.k_8_s/cri/cni-plugins-${CNI_PLG_OS}-${CNI_PLG_ARCH}-v${CNI_PLG_VERSION}.tgz https://github.com/containernetworking/plugins/releases/download/v${CNI_PLG_VERSION}/cni-plugins-${CNI_PLG_OS}-${CNI_PLG_ARCH}-v${CNI_PLG_VERSION}.tgz
-#curl -L -o ~/.k_8_s/cri/cni-plugins-linux-amd64-v1.4.1.tgz https://kubernetes-release.pek3b.qingstor.com/containernetworking/plugins/releases/download/v1.4.1/cni-plugins-linux-amd64-v1.4.1.tgz
-
-#mkdir -p /opt/cni/bin
-#tar Cxzvf /opt/cni/bin ~/.k_8_s/cri/cni-plugins-${CNI_PLG_OS}-${CNI_PLG_ARCH}-v${CNI_PLG_VERSION}.tgz
+mkdir -p /opt/cni/bin
+tar Cxzvf /opt/cni/bin ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz
 
 # 安装crictl-tools
-CRICTL_OS=linux
-CRICTL_ARCH=amd64
-CRICTL_VERSION=1.29.0
+curl -L -o ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Configs.Crictl.Version }}/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz
+#curl -L -o ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz https://kubernetes-release.pek3b.qingstor.com/cri-tools/releases/download/v{{ .Configs.Crictl.Version }}/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz
 
-#curl -L -o ~/.k_8_s/cri/crictl-v${CRICTL_VERSION}-${CRICTL_OS}-${CRICTL_ARCH}.tar.gz https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-${CRICTL_OS}-${CRICTL_ARCH}.tar.gz
-curl -L -o ~/.k_8_s/cri/crictl-v${CRICTL_VERSION}-${CRICTL_OS}-${CRICTL_ARCH}.tar.gz https://kubernetes-release.pek3b.qingstor.com/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-${CRICTL_OS}-${CRICTL_ARCH}.tar.gz
-
-mkdir -p /usr/bin && tar -zxf ~/.k_8_s/cri/crictl-v${CRICTL_VERSION}-${CRICTL_OS}-${CRICTL_ARCH}.tar.gz -C /usr/bin
+mkdir -p /usr/bin && tar -zxf ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz -C /usr/bin

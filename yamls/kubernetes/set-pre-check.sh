@@ -14,6 +14,9 @@ ip link show {{ .Host.NetIF }} | awk '/ether/ {print $2}'
 # check product uuid
 cat /sys/class/dmi/id/product_uuid
 
+# check hostname
+hostname
+
 # check network port
 #{{- range .Configs.K8s.NetworkPorts }}
 #nc -zv 127.0.0.1 {{ . }}

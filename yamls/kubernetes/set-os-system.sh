@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
 
-rm -r /etc/apt/sources.list.d/
-mkdir -p /etc/apt/sources.list.d/
-
-# 安装必要包
-#apt update
-apt -y install sudo selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2
-#apt -y upgrade sudo selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2
-
 # 禁用交换分区
 swapoff -a
 sed -i /^[^#]*swap*/s/^/\#/g /etc/fstab
@@ -201,40 +193,3 @@ update-alternatives --set iptables /usr/sbin/iptables-legacy >/dev/null 2>&1 || 
 update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy >/dev/null 2>&1 || true
 update-alternatives --set arptables /usr/sbin/arptables-legacy >/dev/null 2>&1 || true
 update-alternatives --set ebtables /usr/sbin/ebtables-legacy >/dev/null 2>&1 || true
-
-# set hostname
-hostnamectl set-hostname {{ .Host.Hostname }} && sed -i '/^127.0.1.1/s/.*/127.0.1.1      {{ .Host.Hostname }}/g' /etc/hosts && cat /etc/hostname
-
-# set hosts
-# 去除/etc/hosts重指定开头结尾的行
-sed -i ':a;$!{N;ba};s@# k8s hosts BEGIN.*# k8s hosts END@@' /etc/hosts
-sed -i '/^$/N;/\n$/N;//D' /etc/hosts
-
-cat >>/etc/hosts<<EOF
-# k8s hosts BEGIN
-# <ipv4/ipv6> <hostname>.<k8s-cluster-domain> <hostname>
-# eg. 172.16.0.1 my-cn-cd-01-high-001.cluster.local my-cn-cd-01-high-001
-{{- $ClusterDomain := .Configs.K8s.ClusterDomain }}
-{{- range $host := .Hosts }}
-{{ $host.Address }} {{ $host.Hostname }} {{ $host.Hostname }}.{{ $ClusterDomain }}
-{{- end }}
-# k8s hosts END
-EOF
-
-# set ntp server
-# clear old server and disable pool
-sed -i '/^server/d' /etc/chrony/chrony.conf
-sed -i 's/^pool /#pool /g' /etc/chrony/chrony.conf
-
-# 检查或者添加NtpSever，多个server执行多次即可，以下是使用阿里云和腾讯的NtpServer
-{{- range .Configs.K8s.NtpServer }}
-grep -q '^server {{ . }}' /etc/chrony/chrony.conf||sed '1a server {{ . }} iburst' -i /etc/chrony/chrony.conf
-{{- end }}
-
-# 设置timezone
-timedatectl set-timezone {{ .Configs.K8s.Timezone }}
-timedatectl set-ntp true
-
-# 启动chrony并立即校正
-systemctl enable chrony.service && systemctl restart chrony.service
-chronyc makestep > /dev/null && chronyc sources

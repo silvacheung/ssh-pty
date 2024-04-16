@@ -156,8 +156,9 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	// 读取执行脚本
 	scripts := make(map[string][]scriptInfo, len(cfgSpecial))
 	for _, h := range hosts {
+		hostname := h.Hostname(ctx)
 		for _, file := range cfgScripts {
-			fmt.Printf("读取执行脚本: %s\n", file)
+			fmt.Printf("读取执行脚本[%s]: %s\n", hostname, file)
 			f, e := os.Open(file)
 			if e != nil {
 				return e
@@ -167,7 +168,6 @@ func (exec *Executor) Executing(ctx context.Context) error {
 				return e
 			}
 
-			hostname := h.Hostname(ctx)
 			script := scriptInfo{file: file, tmpl: string(tpl)}
 			scripts[hostname] = append(scripts[hostname], script)
 		}
@@ -176,7 +176,7 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	// 读取特殊脚本
 	for hostname, files := range cfgSpecial {
 		for _, file := range files {
-			fmt.Printf("读取特殊脚本: %s -> %s\n", hostname, file)
+			fmt.Printf("读取特殊脚本[%s]: %s\n", hostname, file)
 			f, e := os.Open(file)
 			if e != nil {
 				return e
@@ -259,21 +259,21 @@ func (exec *Executor) building(ctx context.Context, h host.Runtime, metadata Met
 func (exec *Executor) running(ctx context.Context, h host.Runtime, files ...scriptInfo) <-chan error {
 	errC := make(chan error, len(files))
 
-	if exec.parallel {
-		wg := new(sync.WaitGroup)
-		for _, file := range files {
-			wg.Add(1)
-			go func(file scriptInfo) {
-				defer wg.Done()
-				errC <- exec.runtime.Runner(ctx, "ssh-pty").Run(ctx, file.file, h)
-			}(file)
-		}
-		wg.Wait()
-	} else {
-		for _, file := range files {
-			errC <- exec.runtime.Runner(ctx, "ssh-pty").Run(ctx, file.file, h)
-		}
+	//if exec.parallel {
+	//	wg := new(sync.WaitGroup)
+	//	for _, file := range files {
+	//		wg.Add(1)
+	//		go func(file scriptInfo) {
+	//			defer wg.Done()
+	//			errC <- exec.runtime.Runner(ctx, "ssh-pty").Run(ctx, file.file, h)
+	//		}(file)
+	//	}
+	//	wg.Wait()
+	//} else {
+	for _, file := range files {
+		errC <- exec.runtime.Runner(ctx, "ssh-pty").Run(ctx, file.file, h)
 	}
+	//}
 
 	return exec.handleErrorChannel(errC)
 }

@@ -26,7 +26,8 @@ func (r *SSHPty) Run(ctx context.Context, filename string, h host.Runtime) error
 	stdin := bytes.NewBufferString(cmd)
 
 	// 远程执行命令
-	fmt.Println("执行脚本文件 ->", cmd)
+	hostname := h.Hostname(ctx)
+	fmt.Printf("执行脚本文件[%s]: %s\n", hostname, cmd)
 	return h.PTY(ctx, "xterm").Shell(ctx).
 		Stdout(func(ctx context.Context, stdin *bytes.Buffer, line string) error {
 			fmt.Println(line)
@@ -34,7 +35,7 @@ func (r *SSHPty) Run(ctx context.Context, filename string, h host.Runtime) error
 		}).
 		Stdin(stdin, func(ctx context.Context, out *bytes.Buffer, code int) error {
 			if code != 0 {
-				return fmt.Errorf("ssh pty exitcode: (%d) %s", code, out)
+				return fmt.Errorf("%s exitcode: (%d) %s", hostname, code, out)
 			}
 			return nil
 		})
