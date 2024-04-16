@@ -1,0 +1,77 @@
+#pty:
+  # 定义需要执行的脚本的所有主机
+  # 格式: <network interface>://<username>:<password>@<address>:<port>/?&workdir=<workdir>&hostname=<hostname>&internal=<internal address>&privateKey=<ssh private key file>
+  # 例子: eth0://root:123456@172.16.0.1:22/?workdir=/var/ssh-pty/script&hostname=my-pc&internal=127.0.0.1&privateKey=/a/b/c/private.key
+  # 此主机信息可以从模板文件中取值
+  #
+  #   {{- range .Hosts}}
+  #   {{ .NetIF }}
+  #   {{ .Hostname }}
+  #   {{ .Username }}
+  #   {{ .Password }}
+  #   {{ .Address }}
+  #   {{ .Port }}
+  #   {{ .Internal }}
+  #   {{ .PrivateKey }}
+  #   {{ .Workdir }}
+  #   {{-  end }}
+  #
+  # 在模板中也可以获取当前执行脚本的主机
+  #
+  #   {{ .Host.NetIF }}
+  #   {{ .Host.Hostname }}
+  #   {{ .Host.Username }}
+  #   {{ .Host.Password }}
+  #   {{ .Host.Address }}
+  #   {{ .Host.Port }}
+  #   {{ .Host.Internal }}
+  #   {{ .Host.PrivateKey }}
+  #   {{ .Host.Workdir }}
+  #
+hosts:
+- eth0://root:123456@172.16.0.1:22/?hostname=pc-1721601&internal=127.0.0.1&workdir=/var/ssh-pty/scripts
+- eth0://root:123456@172.16.0.2:22/?hostname=pc-1721602&internal=127.0.0.1&workdir=/var/ssh-pty/scripts
+- eth0://root:123456@172.16.0.3:22/?hostname=pc-1721603&internal=127.0.0.1&workdir=/var/ssh-pty/scripts
+
+  # 配置脚本模板中的数据
+  # 在模板中把这个configs当作一个map[string]any
+  #
+  # {{ .Configs.K8s.Version }}
+  # {{ .Configs.Containerd.Version }}
+  #
+configs:
+  K8s:
+    Version: "1.29.0"
+    ClusterName: "test"
+    ClusterDomain: "cluster.local"
+    NetworkPorts: ["22", "53", "179", "2379", "2380", "6443", "10250", "10251", "10252", "10253", "10254", "10255", "10256", "10257", "10258", "10259", "30000", "32767", "5000", "5080", "4240", "8472", "6081", "4244", "4245", "4250", "4251", "6060", "6061", "6062", "9878", "9879", "9880", "9881", "9882", "9883", "9884", "9885", "9886", "9887", "9888", "9889", "9890", "9891", "9893", "9962", "9963", "9964", "51871"]
+    Timezone: Asia/Shanghai
+    NtpServer:
+    - ntp.aliyun.com
+    - time1.cloud.tencent.com
+  Containerd:
+    Version: "1.13"
+    SandBoxImage: "registry.aliyuncs.com/google_containers/pause:3.9"
+    Mirrors:
+    - https://registry.aliyuncs.com
+    InsecureRegistries: []
+    Auths:
+      xxxx.aliyuncs.com:
+        Username: XXX
+        Password: "xxx"
+        CAFile: ""
+        CertFile: ""
+        KeyFile: ""
+        SkipTLSVerify: true
+
+  # 上面定义的主机需要执行的脚本模板
+  # 这些脚本模板将使用上面的configs和Hosts数据进行填充
+scripts:
+- /ssh-pty/conf/xxx.sh
+- /ssh-pty/conf/xxx.sh
+- /ssh-pty/conf/xxx.sh
+
+  # 这里是特定的主机需要单独执行的脚本模板
+special:
+  pc-1721601:
+  - /ssh-pty/conf/xxx.sh
