@@ -8,13 +8,17 @@ sed -i '/^$/N;/\n$/N;//D' /etc/hosts
 cat >>/etc/hosts<<EOF
 # k8s hosts BEGIN
 # <ipv4/ipv6> <hostname>.<k8s-cluster-domain> <hostname>
-# eg. 172.16.0.1 my-cn-cd-01-high-001.cluster.local my-cn-cd-01-high-001
-{{- $ClusterDomain := .Configs.K8s.ClusterDomain }}
+# eg: 172.16.0.1 my-cn-cd-01-high-001.cluster.local my-cn-cd-01-high-001
 {{- range $host := .Hosts }}
-{{ $host.Address }} {{ $host.Hostname }} {{ $host.Hostname }}.{{ $ClusterDomain }}
+{{ $host.Address }} {{ $host.Hostname }} {{ $host.Hostname }}.cluster.local
 {{- end }}
 # k8s hosts END
 EOF
+
+# 临时文件去重后覆盖原文件
+tmpfile="$$.tmp"
+awk ' !x[$0]++{print > "'$tmpfile'"}' /etc/hosts
+mv $tmpfile /etc/hosts
 
 # print
 cat /etc/hosts

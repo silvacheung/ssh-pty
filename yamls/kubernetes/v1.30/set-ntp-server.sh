@@ -6,12 +6,11 @@ sed -i '/^server/d' /etc/chrony/chrony.conf
 sed -i 's/^pool /#pool /g' /etc/chrony/chrony.conf
 
 # 检查或者添加NtpSever，多个server执行多次即可，以下是使用阿里云和腾讯的NtpServer
-{{- range .Configs.NtpServer }}
-grep -q '^server {{ . }}' /etc/chrony/chrony.conf||sed '1a server {{ . }} iburst' -i /etc/chrony/chrony.conf
-{{- end }}
+grep -q '^server ntp.aliyun.com' /etc/chrony/chrony.conf||sed '1a server ntp.aliyun.com iburst' -i /etc/chrony/chrony.conf
+grep -q '^server time1.cloud.tencent.com' /etc/chrony/chrony.conf||sed '1a server time1.cloud.tencent.com iburst' -i /etc/chrony/chrony.conf
 
 # 设置timezone
-timedatectl set-timezone {{ .Configs.Timezone }}
+timedatectl set-timezone Asia/Shanghai
 timedatectl set-ntp true
 
 # 启动chrony并立即校正

@@ -1,4 +1,28 @@
 #!/usr/bin/env bash
+CRI_DIR=~/.k_8_s/cri
+CONTAINERD_FILE=containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
+CONTAINERD_SHA256=${CONTAINERD_FILE}.sha256sum
+
+# 创建
+if [ ! -d ${CRI_DIR} ]; then
+	mkdir -p ${CRI_DIR}
+fi
+
+# 下载
+if [[ ! -f ${CRI_DIR}/${CONTAINERD_FILE} || ! -f ${CRI_DIR}/${CONTAINERD_SHA256} ]]; then
+  echo "下载containerd和sha256sum"
+  curl -fsSL -o ${CRI_DIR}/${CONTAINERD_FILE} https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/${CONTAINERD_FILE}
+  if [ $($?) != 0 ]; then exit $($?) fi
+  curl -fsSL -o ${CRI_DIR}/${CONTAINERD_SHA256} https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/${CONTAINERD_SHA256}
+fi
+
+#SHA256_SUM=$(sha256sum "${CONTAINERD_FILE}" | awk '{print $1}')
+#SHA256_STD=$(cat "${CRI_DIR}/${CONTAINERD_SHA256}")
+if [ -f ${CRI_DIR}/${CONTAINERD_FILE} && -f ${CRI_DIR}/${CONTAINERD_SHA256} ]; then
+  if [ $(sha256sum -c "${CRI_DIR}/${CONTAINERD_SHA256}") == "${CONTAINERD_FILE}: OK"]; then
+
+  fi
+fi
 
 # 检查是否启动
 IS_ACTIVE=$(systemctl is-active containerd)
@@ -14,8 +38,7 @@ if [ ! -d ~/.k_8_s/cri ]; then
 fi
 
 # 安装containerd
-curl -L -o ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
-#curl -L -o ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz https://kubernetes-release.pek3b.qingstor.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
+curl -fsSL -o ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
 
 tar Cxzvf /usr/local ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
 
@@ -74,18 +97,21 @@ state = "/run/containerd"
     [plugins."io.containerd.grpc.v1.cri".registry]
       [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
         {{- if gt (len .Configs.Containerd.Mirrors) 0 }}
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-          endpoint = [{{- range .Configs.Containerd.Mirrors }}"{{ . }}", {{- end }}"https://registry-1.docker.io"]
+        {{- range $key, $value := .Configs.Containerd.Mirrors }}
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ $key }}"]
+          endpoint = ["{{ $value }}"{{- if eq $key "docker.io" }}, "https://registry-1.docker.io"{{- end }}]
+        {{- end }}
         {{ else }}
         [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
           endpoint = ["https://registry-1.docker.io"]
         {{- end}}
+
         {{- range $value := .Configs.Containerd.InsecureRegistries }}
         [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{$value}}"]
           endpoint = ["http://{{$value}}"]
         {{- end}}
 
-        {{- if .Auths }}
+        {{- if .Configs.Containerd.Auths }}
         [plugins."io.containerd.grpc.v1.cri".registry.configs]
           {{- range $repo, $entry := .Configs.Containerd.Auths }}
           [plugins."io.containerd.grpc.v1.cri".registry.configs."{{$repo}}".auth]
@@ -154,20 +180,17 @@ else
 fi
 
 # 安装runc
-curl -L -o ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} https://github.com/opencontainers/runc/releases/download/v{{ .Configs.Runc.Version }}/runc.{{ .Configs.Runc.Arch }}
-#curl -L -o ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} https://kubernetes-release.pek3b.qingstor.com/opencontainers/runc/releases/download/v{{ .Configs.Runc.Version }}/runc.{{ .Configs.Runc.Arch }}
+curl -fsSL -o ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} https://github.com/opencontainers/runc/releases/download/v{{ .Configs.Runc.Version }}/runc.{{ .Configs.Runc.Arch }}
 
 install -m 755 ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} /usr/local/sbin/runc
 
 # 安装CNI插件
-curl -L -o ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz https://github.com/containernetworking/plugins/releases/download/v{{ .Configs.CNIPlugins.Version }}/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz
-#curl -L -o ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz https://containernetworking.pek3b.qingstor.com/plugins/releases/download/v{{ .Configs.CNIPlugins.Version }}/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-{{ .Configs.CNIPlugins.Version }}.tgz
+curl -fsSL -o ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz https://github.com/containernetworking/plugins/releases/download/v{{ .Configs.CNIPlugins.Version }}/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz
 
 mkdir -p /opt/cni/bin
 tar Cxzvf /opt/cni/bin ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz
 
 # 安装crictl-tools
-curl -L -o ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Configs.Crictl.Version }}/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz
-#curl -L -o ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz https://kubernetes-release.pek3b.qingstor.com/cri-tools/releases/download/v{{ .Configs.Crictl.Version }}/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz
+curl -fsSL -o ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Configs.Crictl.Version }}/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz
 
 mkdir -p /usr/bin && tar -zxf ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz -C /usr/bin
