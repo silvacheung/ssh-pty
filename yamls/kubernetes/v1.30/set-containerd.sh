@@ -1,53 +1,118 @@
 #!/usr/bin/env bash
-CRI_DIR=~/.k_8_s/cri
-CONTAINERD_FILE=containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
-CONTAINERD_SHA256=${CONTAINERD_FILE}.sha256sum
+set -e
 
-# 创建
-if [ ! -d ${CRI_DIR} ]; then
-	mkdir -p ${CRI_DIR}
-fi
+CRI_DIR="{{ .Host.Workdir }}"
 
-# 下载
-if [[ ! -f ${CRI_DIR}/${CONTAINERD_FILE} || ! -f ${CRI_DIR}/${CONTAINERD_SHA256} ]]; then
-  echo "下载containerd和sha256sum"
-  curl -fsSL -o ${CRI_DIR}/${CONTAINERD_FILE} https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/${CONTAINERD_FILE}
-  if [ $($?) != 0 ]; then exit $($?) fi
-  curl -fsSL -o ${CRI_DIR}/${CONTAINERD_SHA256} https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/${CONTAINERD_SHA256}
-fi
+CONTAINERD_ARCH="{{ .Configs.Containerd.Arch }}"
+CONTAINERD_VERSION="{{ .Configs.Containerd.Version }}"
 
-#SHA256_SUM=$(sha256sum "${CONTAINERD_FILE}" | awk '{print $1}')
-#SHA256_STD=$(cat "${CRI_DIR}/${CONTAINERD_SHA256}")
-if [ -f ${CRI_DIR}/${CONTAINERD_FILE} && -f ${CRI_DIR}/${CONTAINERD_SHA256} ]; then
-  if [ $(sha256sum -c "${CRI_DIR}/${CONTAINERD_SHA256}") == "${CONTAINERD_FILE}: OK"]; then
+RUNC_ARCH=${CONTAINERD_ARCH}
+RUNC_VERSION="{{ .Configs.Containerd.RuncVersion }}"
 
-  fi
-fi
+CNI_ARCH=${CONTAINERD_ARCH}
+CNI_VERSION="{{ .Configs.Containerd.CniVersion }}"
 
-# 检查是否启动
-IS_ACTIVE=$(systemctl is-active containerd)
-IS_ENABLED=$(systemctl is-enabled containerd)
-if [[ "$IS_ACTIVE" == "active" && "$IS_ENABLED" == "enabled" ]]; then
-	echo "containerd OK!"
-	exit 0
-fi
+CTL_ARCH=${CONTAINERD_ARCH}
+CTL_VERSION="{{ .Configs.Containerd.CriCtlVersion }}"
+
+CONTAINERD_TOML_FILE=/etc/containerd/config.toml
+CONTAINERD_UNIT_FILE=/etc/systemd/system/containerd.service
 
 # 创建文件夹
-if [ ! -d ~/.k_8_s/cri ]; then
-	mkdir -p ~/.k_8_s/cri
+mkdir -p ${CRI_DIR}
+
+# 下载containerd
+CONTAINERD_FILE=containerd-${CONTAINERD_VERSION}-linux-${CONTAINERD_ARCH}.tar.gz
+CONTAINERD_SHA256=${CONTAINERD_FILE}.sha256sum
+if [ ! -e ${CRI_DIR}/${CONTAINERD_FILE} ]; then
+  echo "下载Containerd"
+  curl -fsSL -o ${CRI_DIR}/${CONTAINERD_FILE} https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/${CONTAINERD_FILE} || rm -f ${CRI_DIR}/${CONTAINERD_FILE} || exit 1
 fi
 
-# 安装containerd
-curl -fsSL -o ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz https://github.com/containerd/containerd/releases/download/v{{ .Configs.Containerd.Version }}/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
-
-tar Cxzvf /usr/local ~/.k_8_s/cri/containerd-{{ .Configs.Containerd.Version }}-linux-{{ .Configs.Containerd.Arch }}.tar.gz
-
-# containerd配置文件
-if [ -e /etc/containerd/config.toml ]; then
-	cat /dev/null > /etc/containerd/config.toml
+if [ ! -e ${CRI_DIR}/${CONTAINERD_SHA256} ]; then
+  echo "下载Containerd.sha256sum"
+  curl -fsSL -o ${CRI_DIR}/${CONTAINERD_SHA256} https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/${CONTAINERD_SHA256} || rm -f ${CRI_DIR}/${CONTAINERD_SHA256} || exit 1
 fi
 
-cat >>/etc/containerd/config.toml<<EOF
+echo "校验Containerd.sha256sum"
+SHA256_SUM=$(sha256sum "${CRI_DIR}/${CONTAINERD_FILE}" | awk '{print $1}')
+SHA256_STD=$(cat ${CRI_DIR}/${CONTAINERD_SHA256} | awk '{print $1}')
+if [ "${SHA256_SUM}" != "${SHA256_STD}" ]; then
+	echo "Containerd sha256sum not eq!"
+  exit 1
+fi
+
+#下载runc
+RUNC_FILE=runc.${RUNC_ARCH}
+RUNC_ASC=${RUNC_FILE}.asc
+if [ ! -e ${CRI_DIR}/${RUNC_FILE} ]; then
+  echo "下载runc"
+  curl -fsSL -o ${CRI_DIR}/${RUNC_FILE} https://github.com/opencontainers/runc/releases/download/v${RUNC_VERSION}/${RUNC_FILE} || rm -f ${CRI_DIR}/${RUNC_FILE} || exit 1
+fi
+
+if [ ! -e ${CRI_DIR}/${RUNC_ASC} ]; then
+  echo "下载runc.asc"
+  curl -fsSL -o ${CRI_DIR}/${RUNC_ASC} https://github.com/opencontainers/runc/releases/download/v${RUNC_VERSION}/${RUNC_ASC} || rm -f ${CRI_DIR}/${RUNC_ASC} || exit 1
+fi
+
+#if [ ! -e ${CRI_DIR}/runc.keyring ]; then
+#  echo "下载runc.keyring"
+#  curl -fsSL -o ${CRI_DIR}/runc.keyring https://github.com/opencontainers/runc/blob/main/runc.keyring || rm -f ${CRI_DIR}/runc.keyring
+#fi
+#
+#echo "校验runc.asc"
+#ASC_SUM=$(sha256sum runc.keyring > runc.keyring.sha256)
+#ASC_OK="${RUNC_FILE}: OK"
+#if [ "${ASC_SUM}" != "${ASC_OK}" ]; then
+#	echo "校验runc md5 not eq!"
+#	exit 1
+#fi
+
+#下载CNI
+CNI_FILE=cni-plugins-linux-${CNI_ARCH}-v${CNI_VERSION}.tgz
+CNI_SHA256=${CNI_FILE}.sha256
+if [ ! -e ${CRI_DIR}/${CNI_FILE} ]; then
+  echo "下载CNI"
+  curl -fsSL -o ${CRI_DIR}/${CNI_FILE} https://github.com/containernetworking/plugins/releases/download/v${CNI_VERSION}/${CNI_FILE} || rm -f ${CRI_DIR}/${CNI_FILE} || exit 1
+fi
+
+if [ ! -e ${CRI_DIR}/${CNI_SHA256} ]; then
+  echo "下载CNI.sha256"
+  curl -fsSL -o ${CRI_DIR}/${CNI_SHA256} https://github.com/containernetworking/plugins/releases/download/v${CNI_VERSION}/${CNI_SHA256} || rm -f ${CRI_DIR}/${CNI_SHA256} || exit 1
+fi
+
+echo "校验CNI.sha256"
+SHA256_SUM=$(sha256sum "${CRI_DIR}/${CNI_FILE}" | awk '{print $1}')
+SHA256_STD=$(cat ${CRI_DIR}/${CNI_SHA256} | awk '{print $1}')
+if [ "${SHA256_SUM}" != "${SHA256_STD}" ]; then
+	echo "CNI sha256 not eq!"
+  exit 1
+fi
+
+#下载CriCtl
+CTL_FILE=crictl-v${CTL_VERSION}-linux-${CTL_ARCH}.tar.gz
+CTL_SHA256=${CTL_FILE}.sha256
+if [ ! -e ${CRI_DIR}/${CTL_FILE} ]; then
+  echo "下载CTL"
+  curl -fsSL -o ${CRI_DIR}/${CTL_FILE} https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CTL_VERSION}/${CTL_FILE} || rm -f ${CRI_DIR}/${CTL_FILE} || exit 1
+fi
+
+if [ ! -e ${CRI_DIR}/${CTL_SHA256} ]; then
+  echo "下载CTL.sha256"
+  curl -fsSL -o ${CRI_DIR}/${CTL_SHA256} https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CTL_VERSION}/${CTL_SHA256} || rm -f ${CRI_DIR}/${CTL_SHA256} || exit 1
+fi
+
+echo "校验CTL.sha256"
+SHA256_SUM=$(sha256sum "${CRI_DIR}/${CTL_FILE}" | awk '{print $1}')
+SHA256_STD=$(cat ${CRI_DIR}/${CTL_SHA256})
+if [ "${SHA256_SUM}" != "${SHA256_STD}" ]; then
+	echo "CTL sha256 not eq!"
+	exit 1
+fi
+
+#写入containerd配置文件
+echo "写入containerd配置文件"
+cat > ${CONTAINERD_TOML_FILE} <<EOF
 version = 2
 root = "/var/lib/containerd"
 state = "/run/containerd"
@@ -106,11 +171,6 @@ state = "/run/containerd"
           endpoint = ["https://registry-1.docker.io"]
         {{- end}}
 
-        {{- range $value := .Configs.Containerd.InsecureRegistries }}
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{$value}}"]
-          endpoint = ["http://{{$value}}"]
-        {{- end}}
-
         {{- if .Configs.Containerd.Auths }}
         [plugins."io.containerd.grpc.v1.cri".registry.configs]
           {{- range $repo, $entry := .Configs.Containerd.Auths }}
@@ -126,17 +186,9 @@ state = "/run/containerd"
         {{- end}}
 EOF
 
-# containerd单元文件
-CONTAINERD_UNIT_FILE=/etc/systemd/system/containerd.service
-CONTAINERD_IS_ACTIVE=$(systemctl is-active containerd.service)
-CONTAINERD_IS_ENABLED=$(systemctl is-enabled containerd.service)
-if [ "$CONTAINERD_IS_ACTIVE" == "active" ]; then
-	systemctl disable containerd.service
-	systemctl stop containerd.service
-	cat /dev/null > $CONTAINERD_UNIT_FILE
-fi
-
-cat > $CONTAINERD_UNIT_FILE << "EOF"
+#写入containerd单元文件
+echo "写入containerd单元文件"
+cat > ${CONTAINERD_UNIT_FILE} << "EOF"
 [Unit]
 Description=containerd container runtime
 Documentation=https://containerd.io
@@ -165,32 +217,42 @@ OOMScoreAdjust=-999
 WantedBy=multi-user.target
 EOF
 
-# 启动containerd
+#安装containerd
+echo "安装containerd"
+tar Cxzvf /usr/local ${CRI_DIR}/${CONTAINERD_FILE}
+
+#安装runc
+echo "安装runc"
+install -m 755 ${CRI_DIR}/${RUNC_FILE} /usr/local/sbin/runc
+
+#安装CNI
+echo "安装CNI"
+mkdir -p /opt/cni/bin && tar Cxzvf /opt/cni/bin ${CRI_DIR}/${CNI_FILE}
+
+#安装CTL
+mkdir -p /usr/bin && tar -zxf ${CRI_DIR}/${CTL_FILE} -C /usr/bin
+
+#停止containerd
+#CONTAINERD_IS_ACTIVE=$(systemctl is-active containerd.service)
+#CONTAINERD_IS_ENABLED=$(systemctl is-enabled containerd.service)
+#if [[ "$CONTAINERD_IS_ENABLED" == "enabled" && "$CONTAINERD_IS_ACTIVE" == "active" ]]; then
+#  echo "停止containerd"
+#	systemctl disable containerd.service
+#	systemctl stop containerd.service
+#fi
+
+#启动containerd
+echo "启动containerd"
 systemctl daemon-reload
 systemctl enable containerd --now
 
-# 检查是否启动
-IS_ACTIVE=$(systemctl is-active containerd)
-IS_ENABLED=$(systemctl is-enabled containerd)
-if [[ "$IS_ACTIVE" == "active" && "$IS_ENABLED" == "enabled" ]]; then
-	echo "containerd OK!"
+#检查是否启动
+CONTAINERD_IS_ACTIVE=$(systemctl is-active containerd.service)
+CONTAINERD_IS_ENABLED=$(systemctl is-enabled containerd.service)
+if [[ "$CONTAINERD_IS_ENABLED" == "enabled" && "$CONTAINERD_IS_ACTIVE" == "active" ]]; then
+  echo "Containerd Is Running"
+  exit 0
 else
-	echo "containerd Bad!"
-	exit 1
+  echo "Containerd Not Running"
+  exit 1
 fi
-
-# 安装runc
-curl -fsSL -o ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} https://github.com/opencontainers/runc/releases/download/v{{ .Configs.Runc.Version }}/runc.{{ .Configs.Runc.Arch }}
-
-install -m 755 ~/.k_8_s/cri/runc.{{ .Configs.Runc.Arch }} /usr/local/sbin/runc
-
-# 安装CNI插件
-curl -fsSL -o ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz https://github.com/containernetworking/plugins/releases/download/v{{ .Configs.CNIPlugins.Version }}/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz
-
-mkdir -p /opt/cni/bin
-tar Cxzvf /opt/cni/bin ~/.k_8_s/cri/cni-plugins-linux-{{ .Configs.CNIPlugins.Arch }}-v{{ .Configs.CNIPlugins.Version }}.tgz
-
-# 安装crictl-tools
-curl -fsSL -o ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Configs.Crictl.Version }}/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz
-
-mkdir -p /usr/bin && tar -zxf ~/.k_8_s/cri/crictl-v{{ .Configs.Crictl.Version }}-linux-{{ .Configs.Crictl.Arch }}.tar.gz -C /usr/bin

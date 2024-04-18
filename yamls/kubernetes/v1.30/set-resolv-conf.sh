@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # 去除/etc/resolv.conf重指定开头结尾的行
 sed -i ':a;$!{N;ba};s@# cn dns BEGIN.*# cn dns END@@' /etc/resolv.conf

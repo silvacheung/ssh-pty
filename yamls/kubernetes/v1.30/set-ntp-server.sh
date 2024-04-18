@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # set ntp server
 # clear old server and disable pool

@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
+set -e
 
-if [ ! -e /etc/kubernetes/audit/kubeadm-config.yaml ];then
-  cat /dev/null > /etc/kubernetes/kubeadm-config.yaml
-fi
-
-cat >>/etc/kubernetes/kubeadm-config.yaml<<EOF
+cat >/etc/kubernetes/kubeadm-config.yaml<<EOF
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta4/
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 
-clusterName: "{{ .Configs.K8s.ClusterName }}" # "example-cluster"
 kubernetesVersion: "{{ .Configs.K8s.Version }}" # "v1.21.0"
+clusterName: "{{ .Configs.K8s.ClusterName }}" # "example-cluster"
 imageRepository: "{{ .Configs.K8s.ImageRepository }}" # "registry.k8s.io"
-controlPlaneEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint.Domain }}:{{ .Configs.K8s.ControlPlaneEndpoint.Port }}" # "10.100.0.1:6443"
+controlPlaneEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint }}" # "10.100.0.1:6443"
 certificatesDir: "/etc/kubernetes/pki"
 
 #featureGates:
@@ -24,28 +21,18 @@ certificatesDir: "/etc/kubernetes/pki"
 etcd:
   # one of local or external
   local:
-    imageRepository: "{{ .Configs.K8s.Etcd.ImageRepository }}" # "registry.k8s.io"
-    imageTag: "{{ .Configs.K8s.Etcd.ImageTag }}" # "3.2.24"
+    # imageRepository: "{{ .Configs.K8s.Etcd.ImageRepository }}" # "registry.k8s.io"
+    # imageTag: "{{ .Configs.K8s.Etcd.ImageTag }}" # "3.2.24"
     dataDir: "/var/lib/etcd"
-    serverCertSANs:
-    - "localhost"
-    - "127.0.0.1"
-    - "::1"
-    - "0:0:0:0:0:0:0:1"
-    - "etcd.kube-system.svc.cluster.local"
-    - "etcd.kube-system.svc"
-    - "etcd.kube-system"
-    - "etcd"
-    - "{{ .Configs.K8s.ControlPlaneEndpoint.Domain }}"
-    {{- $cps := .Configs.K8s.ControlPlanes}}
-    {{- range $host := .Hosts }}
-    {{- range $hostname := $cps }}
-    {{- if eq $host.Hostname $hostname}}
-    - "{{ $host.Hostname }}"
-    - "{{ $host.Internal }}"
-    {{- end }}
-    {{- end }}
-    {{- end }}
+    # serverCertSANs:
+    # - "localhost"
+    # - "127.0.0.1"
+    # - "::1"
+    # - "0:0:0:0:0:0:0:1"
+    # - "etcd.kube-system.svc.cluster.local"
+    # - "etcd.kube-system.svc"
+    # - "etcd.kube-system"
+    # - "etcd"
     # peerCertSANs:
     # - "10.100.0.1"
     # - "10.100.0.2"
@@ -60,9 +47,9 @@ etcd:
   #   certFile: "/etcd/kubernetes/pki/etcd/etcd.crt"
   #   keyFile: "/etcd/kubernetes/pki/etcd/etcd.key"
 
-dns:
-  imageRepository: "{{ .Configs.K8s.Coredns.ImageRepository }}"
-  imageTag: "{{ .Configs.K8s.Coredns.ImageTag }}"
+#dns:
+  # imageRepository: "{{ .Configs.K8s.Coredns.ImageRepository }}"
+  # imageTag: "{{ .Configs.K8s.Coredns.ImageTag }}"
 
 networking:
   dnsDomain: "cluster.local"
@@ -94,22 +81,15 @@ apiServer:
     mountPath: /etc/kubernetes/audit
     pathType: DirectoryOrCreate
     readOnly: false
-  certSANs:
-  - "localhost"
-  - "127.0.0.1"
-  - "::1"
-  - "0:0:0:0:0:0:0:1"
-  - "kubernetes.default.svc.cluster.local"
-  - "kubernetes.default.svc"
-  - "kubernetes.default"
-  - "kubernetes"
-  - "{{ .Configs.K8s.ControlPlaneEndpoint.Domain }}"
-  {{- range .Hosts }}
-  - "{{ .Hostname }}"
-  - "{{ .Hostname }}.cluster.local"
-  - "{{ .Address }}"
-  - "{{ .Internal }}"
-  {{- end }}
+  # certSANs:
+  # - "localhost"
+  # - "127.0.0.1"
+  # - "::1"
+  # - "0:0:0:0:0:0:0:1"
+  # - "kubernetes.default.svc.cluster.local"
+  # - "kubernetes.default.svc"
+  # - "kubernetes.default"
+  # - "kubernetes"
 
 controllerManager:
   extraArgs:
@@ -159,7 +139,7 @@ kind: InitConfiguration
 #   - system:bootstrappers:kubeadm:default-node-token
 
 localAPIEndpoint:
-  advertiseAddress: {{ .Host.Internal }} # "10.100.0.1"
+  advertiseAddress: "0.0.0.0"
   bindPort: 6443
 
 nodeRegistration:
@@ -179,7 +159,6 @@ nodeRegistration:
     cgroup-driver: "systemd"
     node-ip: "{{ .Host.Internal }}"
     hostname-override: "{{ .Host.Hostname }}"
-
 
 certificateKey: "{{ .Configs.K8s.CertificateKey }}"
 skipPhases:
@@ -491,7 +470,7 @@ discovery:
   bootstrapToken:
     unsafeSkipCAVerification: true
     token: "{{ .Configs.K8s.BootstrapToken }}"
-    apiServerEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint.Domain }}:{{ .Configs.K8s.ControlPlaneEndpoint.Port }}"
+    apiServerEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint }}"
   #   caCertHashes:
   #   - ""
   #   - ""

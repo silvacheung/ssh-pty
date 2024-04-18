@@ -1,18 +1,9 @@
 #!/usr/bin/env bash
+set -e
 
-if [ ! -d /etc/kubernetes/audit ];then
-  mkdir -p /etc/kubernetes/audit
-fi
+mkdir -p /etc/kubernetes/audit
 
-if [ ! -e /etc/kubernetes/audit/audit-policy.yaml ];then
-  cat /dev/null > /etc/kubernetes/audit/audit-policy.yaml
-fi
-
-if [ ! -e /etc/kubernetes/audit/audit-webhook.yaml ];then
-  cat /dev/null > /etc/kubernetes/audit/audit-webhook.yaml
-fi
-
-cat >>/etc/kubernetes/audit/audit-policy.yaml<<EOF
+cat >/etc/kubernetes/audit/audit-policy.yaml<<EOF
 ---
 apiVersion: audit.k8s.io/v1
 kind: Policy
@@ -140,7 +131,7 @@ rules:
 
 EOF
 
-cat >>/etc/kubernetes/audit/audit-webhook.yaml<<EOF
+cat >/etc/kubernetes/audit/audit-webhook.yaml<<EOF
 ---
 apiVersion: v1
 kind: Config
@@ -148,7 +139,7 @@ clusters:
 - name: kube-auditing
   cluster:
     # server: https://SHOULD_BE_REPLACED:6443/audit/webhook/event
-    server: https://{{ .Configs.K8s.ControlPlaneEndpoint.Domain }}:{{ .Configs.K8s.ControlPlaneEndpoint.Port }}/audit/webhook/event
+    server: https://{{ .Configs.K8s.ControlPlaneEndpoint }}/audit/webhook/event
     insecure-skip-tls-verify: true
 contexts:
 - context:

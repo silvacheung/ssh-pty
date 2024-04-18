@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # 安装必要包
 apt update

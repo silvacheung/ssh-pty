@@ -7,16 +7,8 @@ configs:
   K8s:
     Version: "1.29.0"
     ClusterName: "test"
-    ControlPlaneEndpoint:
-      Domain: "172.16.67.202"
-      Port: "9433"
+    ControlPlaneEndpoint: "lb.apiserver.k8s"
     ImageRepository: "registry.aliyuncs.com/google_containers"
-    Etcd:
-      ImageRepository: "registry.aliyuncs.com/google_containers"
-      ImageTag: ""
-    Coredns:
-      ImageRepository: "registry.aliyuncs.com/google_containers"
-      ImageTag: ""
     ServiceSubnet: "10.96.0.0/16"
     PodSubnet: "10.244.0.0/24"
     NodeCidrMaskSize: "25"
@@ -27,48 +19,55 @@ configs:
       - "lwy-cn-cd-tpy-std-1721667201"
       - "lwy-cn-cd-tpy-std-1721667202"
       - "lwy-cn-cd-tpy-std-1721667203"
+    WorkerNodes:
+      - "lwy-cn-cd-tpy-std-1721667201"
+      - "lwy-cn-cd-tpy-std-1721667202"
+      - "lwy-cn-cd-tpy-std-1721667203"
 
   Containerd:
     Arch: "amd64"
     Version: "1.7.15"
+    RuncVersion: "1.1.12"
+    CniVersion: "1.4.1"
+    CriCtlVersion: "1.29.0"
     SandBoxImage: "registry.aliyuncs.com/google_containers/pause:3.9"
     Mirrors:
       docker.io: https://registry.aliyuncs.com
+      gcr.io: https://gcr.mirrors.ustc.edu.cn
+      quay.io: https://quay.mirrors.ustc.edu.cn
+      # k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
       k8s.gcr.io: https://registry.aliyuncs.com/google_containers
-    InsecureRegistries: []
+      registry.k8s.io: https://registry.aliyuncs.com/google_containers
+      harbor.local: http://localhost:/harbor
     Auths:
-      xxxx.aliyuncs.com:
-        Username: XXX
-        Password: "xxx"
+      harbor.local:
+        Username: "username"
+        Password: "password"
         CAFile: ""
         CertFile: ""
         KeyFile: ""
         SkipTLSVerify: true
 
-  Runc:
-    Arch: "amd64"
-    Version: "1.1.12"
+    LB:
+      VirtualIP: ""
+      Port: ""
+      Master: "lwy-cn-cd-tpy-std-1721667201"
+      Backup: ["lwy-cn-cd-tpy-std-1721667202", "lwy-cn-cd-tpy-std-1721667203"]
 
-  CNIPlugins:
-    Arch: "amd64"
-    Version: "1.4.1"
 
-  Crictl:
-    Arch: "amd64"
-    Version: "1.29.0"
 
 scripts:
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-resolv-conf.sh
-  #  - D:\workspace\ssh-pty\yamls\kubernetes\set-apt.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-hostname.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-hosts.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-pre-check.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-os-system.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-ntp-server.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-containerd.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-kubeadm.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-k8s-config.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\set-k8s-audit.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-resolv-conf.sh
+  #  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-apt.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-hostname.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-hosts.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-pre-check.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-os-system.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-ntp-server.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-containerd.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-config.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-audit.sh
 #  - ./set-k8s-lb.sh
 #  - ./set-k8s-boot.sh
 #  - ./set-k8s-join.sh
