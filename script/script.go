@@ -132,6 +132,7 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	cfgHosts := exec.config.GetStringSlice("hosts")
 	cfgScripts := exec.config.GetStringSlice("scripts")
 	cfgSpecial := exec.config.GetStringMapStringSlice("special")
+	//cfgSftp := exec.config.GetStringMapStringSlice("sftp")
 
 	// 读取执行主机
 	hosts := make([]host.Runtime, 0, len(cfgHosts))
@@ -152,6 +153,27 @@ func (exec *Executor) Executing(ctx context.Context) error {
 		hosts = append(hosts, h)
 		mapping[hostname] = h
 	}
+
+	// 传输SFTP数据
+	//wg := new(sync.WaitGroup)
+	//sftpErrC := make(chan error, len(cfgSftp))
+	//for hostname, files := range cfgSftp {
+	//	if h, ok := mapping[hostname]; ok {
+	//		fmt.Printf("传输SFTP数据[%s]: %v\n", hostname, files)
+	//		wg.Add(1)
+	//		go func() {
+	//			defer wg.Done()
+	//			if err := <-exec.sftpToRemote(ctx, h, files...); err != nil {
+	//				sftpErrC <- err
+	//			}
+	//		}()
+	//	}
+	//}
+
+	//wg.Wait()
+	//if err := <-exec.handleErrorChannel(sftpErrC); err != nil {
+	//	return err
+	//}
 
 	// 读取执行脚本
 	scripts := make(map[string][]scriptInfo, len(cfgSpecial))
@@ -198,8 +220,8 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	fmt.Printf("设置脚本数据: %s\n", string(metadata_))
 
 	// 开始构建脚本
-	errC := make(chan error, len(scripts)*2)
 	wg := new(sync.WaitGroup)
+	scriptErrC := make(chan error, len(scripts)*2)
 	for hostname, files := range scripts {
 		if h, ok := mapping[hostname]; ok {
 			wg.Add(1)
@@ -207,11 +229,11 @@ func (exec *Executor) Executing(ctx context.Context) error {
 				defer wg.Done()
 				metadata = metadata.SetThisHost(ctx, h)
 				if err := <-exec.building(ctx, h, metadata, files...); err != nil {
-					errC <- err
+					scriptErrC <- err
 					return
 				}
 				if err := <-exec.running(ctx, h, files...); err != nil {
-					errC <- err
+					scriptErrC <- err
 					return
 				}
 			}()
@@ -219,7 +241,7 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	}
 
 	wg.Wait()
-	err := <-exec.handleErrorChannel(errC)
+	err := <-exec.handleErrorChannel(scriptErrC)
 
 	return err
 }
@@ -278,6 +300,33 @@ func (exec *Executor) running(ctx context.Context, h host.Runtime, files ...scri
 	return exec.handleErrorChannel(errC)
 }
 
+func (exec *Executor) sftpToRemote(ctx context.Context, h host.Runtime, files ...string) <-chan error {
+	errC := make(chan error, len(files))
+	sftpFn := func(ctx context.Context, errC chan error, h host.Runtime, file string) {
+		workdir := h.Workdir(ctx)
+		errC <- h.PTY(ctx, "xterm").Sftp(ctx).CopyFile(ctx, file, workdir)
+	}
+
+	if exec.parallel {
+		wg := new(sync.WaitGroup)
+		for _, file := range files {
+			wg.Add(1)
+			go func(file string) {
+				defer wg.Done()
+				sftpFn(ctx, errC, h, file)
+			}(file)
+		}
+		wg.Wait()
+	} else {
+		for _, file := range files {
+			sftpFn(ctx, errC, h, file)
+		}
+	}
+
+	return exec.handleErrorChannel(errC)
+
+}
+
 func (exec *Executor) handleErrorChannel(errC chan error) <-chan error {
 	close(errC)
 	errs := make([]string, 0, len(errC))
@@ -291,7 +340,6 @@ func (exec *Executor) handleErrorChannel(errC chan error) <-chan error {
 	defer close(retC)
 	if len(errs) == 0 {
 		retC <- nil
-		return retC
 	} else {
 		retC <- fmt.Errorf("%s", strings.Join(errs, "\n"))
 	}

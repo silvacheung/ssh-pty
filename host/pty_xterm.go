@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+var clients = new(sync.Map)
+
 type Xterm struct {
 	ctx     context.Context
 	mux     *sync.Mutex
@@ -35,6 +37,13 @@ func (xt *Xterm) Sftp(ctx context.Context) Sftp {
 }
 
 func (xt *Xterm) connTo(ctx context.Context) (err error) {
+	endpoint := xt.runtime.Address(xt.ctx) + ":" + xt.runtime.Port(xt.ctx)
+	if v, ok := clients.Load("ssh:" + endpoint); ok && v != nil {
+		xt.client = v.(*ssh.Client)
+	}
+	if v, ok := clients.Load("sftp:" + endpoint); ok && v != nil {
+		xt.sftp = v.(*sftp.Client)
+	}
 	xt.mux.Lock()
 	defer xt.mux.Unlock()
 	if xt.client == nil || xt.sftp == nil {
@@ -51,7 +60,6 @@ func (xt *Xterm) connTo(ctx context.Context) (err error) {
 			authMethods = append(authMethods, ssh.PublicKeys(signer))
 		}
 
-		endpoint := xt.runtime.Address(xt.ctx) + ":" + xt.runtime.Port(xt.ctx)
 		xt.client, err = ssh.Dial("tcp", endpoint, &ssh.ClientConfig{
 			Config:          ssh.Config{},
 			User:            xt.runtime.Username(xt.ctx),
@@ -64,6 +72,8 @@ func (xt *Xterm) connTo(ctx context.Context) (err error) {
 		}
 
 		xt.sftp, err = sftp.NewClient(xt.client)
+		clients.Store("ssh:"+endpoint, xt.client)
+		clients.Store("sftp:"+endpoint, xt.sftp)
 	}
 
 	return err
@@ -99,6 +109,7 @@ func (xt *XtermShell) Stdin(stdin *bytes.Buffer, exited func(ctx context.Context
 	if err != nil {
 		return err
 	}
+	defer session.Close()
 
 	if err = session.RequestPty("xterm", 100, 50, ssh.TerminalModes{
 		ssh.ECHO:          0,     // disable echoing

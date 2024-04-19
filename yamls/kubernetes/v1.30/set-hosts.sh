@@ -10,7 +10,6 @@ cat >>/etc/hosts<<EOF
 # k8s hosts BEGIN
 # <ipv4/ipv6> <hostname>.<k8s-cluster-domain> <hostname>
 # eg: 172.16.0.1 my-cn-cd-01-high-001.cluster.local my-cn-cd-01-high-001
-
 {{- range $host := .Hosts }}
 {{ $host.Address }} {{ $host.Hostname }} {{ $host.Hostname }}.cluster.local
 {{- end }}

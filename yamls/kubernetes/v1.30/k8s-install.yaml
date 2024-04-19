@@ -7,12 +7,15 @@ configs:
   K8s:
     Version: "1.29.0"
     ClusterName: "test"
-    ControlPlaneEndpoint: "lb.apiserver.k8s"
+    ControlPlaneEndpoint:
+      Domain: "lb.apiserver.k8s"
+      Address: "10.10.10.1"
+      Port: "9443"
     ImageRepository: "registry.aliyuncs.com/google_containers"
     ServiceSubnet: "10.96.0.0/16"
     PodSubnet: "10.244.0.0/24"
     NodeCidrMaskSize: "25"
-    IPVSExcludeCIDRs: ["172.16.0.0/24"]
+    IPVSExcludeCIDRs: [ "172.16.0.0/24" ]
     CertificateKey: ""
     BootstrapToken: ""
     ControlPlanes:
@@ -29,7 +32,7 @@ configs:
     Version: "1.7.15"
     RuncVersion: "1.1.12"
     CniVersion: "1.4.1"
-    CriCtlVersion: "1.29.0"
+    CriCtlVersion: "1.30.0"
     SandBoxImage: "registry.aliyuncs.com/google_containers/pause:3.9"
     Mirrors:
       docker.io: https://registry.aliyuncs.com
@@ -48,13 +51,19 @@ configs:
         KeyFile: ""
         SkipTLSVerify: true
 
-    LB:
-      VirtualIP: ""
-      Port: ""
-      Master: "lwy-cn-cd-tpy-std-1721667201"
-      Backup: ["lwy-cn-cd-tpy-std-1721667202", "lwy-cn-cd-tpy-std-1721667203"]
-
-
+  LB:
+    VirtualIP: "172.16.67.204/24"
+    Master: "lwy-cn-cd-tpy-std-1721667201"
+    Backup: [ "lwy-cn-cd-tpy-std-1721667202", "lwy-cn-cd-tpy-std-1721667203" ]
+    StatsUI:
+      Bind: "*:8080"
+      Auth: "admin:123456"
+    Frontend:
+      Bind: "*:6433"
+    Backend:
+      - "lwy-cn-cd-tpy-std-1721667201"
+      - "lwy-cn-cd-tpy-std-1721667202"
+      - "lwy-cn-cd-tpy-std-1721667203"
 
 scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-resolv-conf.sh
@@ -64,15 +73,20 @@ scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-pre-check.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-os-system.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-ntp-server.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-containerd.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
+#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-containerd.sh
+#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-config.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-audit.sh
-#  - ./set-k8s-lb.sh
-#  - ./set-k8s-boot.sh
-#  - ./set-k8s-join.sh
-#  - ./get-k8s-info.sh
+#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
 
-#special:
-#  pc-1721601:
-#    - /ssh-pty/conf/xxx.sh
+special:
+  lwy-cn-cd-tpy-std-1721667201:
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+  lwy-cn-cd-tpy-std-1721667202:
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+  lwy-cn-cd-tpy-std-1721667203:
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
