@@ -5,6 +5,7 @@ mkdir -p /etc/kubernetes/audit
 
 cat >/etc/kubernetes/audit/audit-policy.yaml<<EOF
 ---
+# see https://kubernetes.io/zh-cn/docs/tasks/debug/debug-cluster/audit/#audit-policy
 apiVersion: audit.k8s.io/v1
 kind: Policy
 rules:
@@ -138,8 +139,8 @@ kind: Config
 clusters:
 - name: kube-auditing
   cluster:
-    # server: https://SHOULD_BE_REPLACED:6443/audit/webhook/event
-    server: https://{{ .Configs.K8s.ControlPlaneEndpoint }}/audit/webhook/event
+    # see https://kubernetes.io/zh-cn/docs/tasks/debug/debug-cluster/audit/#webhook-backend
+    server: https://SHOULD_BE_REPLACED:6443/audit/webhook/event
     insecure-skip-tls-verify: true
 contexts:
 - context:

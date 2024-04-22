@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
+#CPE_ADDR="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[1]}')"
+CPE_PORT="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[2]}')"
+if [ "$CPE_PORT" == "" ]; then
+  CPE_PORT="6443"
+fi
+
 HA_PORT="{{ .Configs.LB.Frontend.Bind }}"
 HA_PORT="${HA_PORT##*:}"
 
@@ -63,11 +69,10 @@ backend b-kube-api-server
   option  ssl-hello-chk
   balance leastconn #roundrobin
   {{- $backends := .Configs.LB.Backend }}
-  {{- $cpePort:= .Configs.K8s.ControlPlaneEndpoint.Port }}
   {{- range $host := .Hosts }}
   {{- range $backend := $backends }}
   {{- if eq $host.Hostname $backend }}
-  server {{ $host.Hostname }} {{ $host.Address }}:{{ if gt (len $cpePort) 0 }}{{ $cpePort }}{{ else }}6443{{ end }} check
+  server {{ $host.Hostname }} {{ $host.Address }}:$CPE_PORT check
   {{- end }}
   {{- end }}
   {{- end }}

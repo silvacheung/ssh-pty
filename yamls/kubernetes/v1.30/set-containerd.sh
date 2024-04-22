@@ -12,8 +12,8 @@ RUNC_VERSION="{{ .Configs.Containerd.RuncVersion }}"
 CNI_ARCH=${CONTAINERD_ARCH}
 CNI_VERSION="{{ .Configs.Containerd.CniVersion }}"
 
-CTL_ARCH=${CONTAINERD_ARCH}
-CTL_VERSION="{{ .Configs.Containerd.CriCtlVersion }}"
+#CTL_ARCH=${CONTAINERD_ARCH}
+#CTL_VERSION="{{ .Configs.Containerd.CriCtlVersion }}"
 
 CONTAINERD_TOML_FILE=/etc/containerd/config.toml
 CONTAINERD_UNIT_FILE=/etc/systemd/system/containerd.service
@@ -89,26 +89,26 @@ if [ "${SHA256_SUM}" != "${SHA256_STD}" ]; then
   exit 1
 fi
 
-#下载CriCtl
-CTL_FILE=crictl-v${CTL_VERSION}-linux-${CTL_ARCH}.tar.gz
-CTL_SHA256=${CTL_FILE}.sha256
-if [ ! -e ${CRI_DIR}/${CTL_FILE} ]; then
-  echo "下载CTL"
-  curl -fsSL -o ${CRI_DIR}/${CTL_FILE} https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CTL_VERSION}/${CTL_FILE} || rm -f ${CRI_DIR}/${CTL_FILE} || exit 1
-fi
-
-if [ ! -e ${CRI_DIR}/${CTL_SHA256} ]; then
-  echo "下载CTL.sha256"
-  curl -fsSL -o ${CRI_DIR}/${CTL_SHA256} https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CTL_VERSION}/${CTL_SHA256} || rm -f ${CRI_DIR}/${CTL_SHA256} || exit 1
-fi
-
-echo "校验CTL.sha256"
-SHA256_SUM=$(sha256sum "${CRI_DIR}/${CTL_FILE}" | awk '{print $1}')
-SHA256_STD=$(cat ${CRI_DIR}/${CTL_SHA256})
-if [ "${SHA256_SUM}" != "${SHA256_STD}" ]; then
-	echo "CTL sha256 not eq!"
-	exit 1
-fi
+##下载CriCtl
+#CTL_FILE=crictl-v${CTL_VERSION}-linux-${CTL_ARCH}.tar.gz
+#CTL_SHA256=${CTL_FILE}.sha256
+#if [ ! -e ${CRI_DIR}/${CTL_FILE} ]; then
+#  echo "下载CTL"
+#  curl -fsSL -o ${CRI_DIR}/${CTL_FILE} https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CTL_VERSION}/${CTL_FILE} || rm -f ${CRI_DIR}/${CTL_FILE} || exit 1
+#fi
+#
+#if [ ! -e ${CRI_DIR}/${CTL_SHA256} ]; then
+#  echo "下载CTL.sha256"
+#  curl -fsSL -o ${CRI_DIR}/${CTL_SHA256} https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CTL_VERSION}/${CTL_SHA256} || rm -f ${CRI_DIR}/${CTL_SHA256} || exit 1
+#fi
+#
+#echo "校验CTL.sha256"
+#SHA256_SUM=$(sha256sum "${CRI_DIR}/${CTL_FILE}" | awk '{print $1}')
+#SHA256_STD=$(cat ${CRI_DIR}/${CTL_SHA256})
+#if [ "${SHA256_SUM}" != "${SHA256_STD}" ]; then
+#	echo "CTL sha256 not eq!"
+#	exit 1
+#fi
 
 #写入containerd配置文件
 echo "写入containerd配置文件"
@@ -229,8 +229,8 @@ install -m 755 ${CRI_DIR}/${RUNC_FILE} /usr/local/sbin/runc
 echo "安装CNI"
 mkdir -p /opt/cni/bin && tar Cxzvf /opt/cni/bin ${CRI_DIR}/${CNI_FILE}
 
-#安装CTL
-mkdir -p /usr/bin && tar -zxf ${CRI_DIR}/${CTL_FILE} -C /usr/bin
+##安装CTL
+#mkdir -p /usr/bin && tar -zxf ${CRI_DIR}/${CTL_FILE} -C /usr/bin
 
 #停止containerd
 #CONTAINERD_IS_ACTIVE=$(systemctl is-active containerd.service)

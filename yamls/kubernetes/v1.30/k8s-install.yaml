@@ -5,19 +5,16 @@ hosts:
 
 configs:
   K8s:
-    Version: "1.29.0"
+    Version: "1.30.0"
     ClusterName: "test"
-    ControlPlaneEndpoint:
-      Domain: "lb.apiserver.k8s"
-      Address: "10.10.10.1"
-      Port: "9443"
+    ControlPlaneEndpoint: "k8s.api-server.lb:6443"
     ImageRepository: "registry.aliyuncs.com/google_containers"
     ServiceSubnet: "10.96.0.0/16"
     PodSubnet: "10.244.0.0/24"
     NodeCidrMaskSize: "25"
     IPVSExcludeCIDRs: [ "172.16.0.0/24" ]
-    CertificateKey: ""
-    BootstrapToken: ""
+    CertificateKey: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
+    BootstrapToken: "l6926f.y63dmiz601uwyfqj"
     ControlPlanes:
       - "lwy-cn-cd-tpy-std-1721667201"
       - "lwy-cn-cd-tpy-std-1721667202"
@@ -73,12 +70,12 @@ scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-pre-check.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-os-system.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-ntp-server.sh
-#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-containerd.sh
-#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-config.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-audit.sh
-#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
-#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-containerd.sh
+#  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
 
 special:
   lwy-cn-cd-tpy-std-1721667201:
