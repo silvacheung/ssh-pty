@@ -268,7 +268,7 @@ func (exec *Executor) sftpToRemote(ctx context.Context, h host.Runtime, files ..
 	errC := make(chan error, len(files))
 	sftpFn := func(ctx context.Context, errC chan error, h host.Runtime, file string) {
 		workdir := h.Workdir(ctx)
-		errC <- h.PTY(ctx, "xterm").Sftp(ctx).CopyFile(ctx, file, workdir)
+		errC <- h.PTY(ctx, "xterm").Sftp(ctx).Copy(ctx, file, workdir)
 	}
 
 	if exec.parallel {

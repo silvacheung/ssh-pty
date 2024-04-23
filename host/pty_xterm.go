@@ -67,11 +67,11 @@ func NewXterm(ctx context.Context, host Runtime) Pty {
 }
 
 func (xt *Xterm) Shell(ctx context.Context) Shell {
-	return &XtermShell{Xterm: xt, output: new(bytes.Buffer)}
+	return &XtermShell{xterm: xt, ctx: ctx, buf: new(bytes.Buffer)}
 }
 
 func (xt *Xterm) Sftp(ctx context.Context) Sftp {
-	return &XtermSftp{Xterm: xt}
+	return &XtermSftp{xterm: xt}
 }
 
 func (xt *Xterm) ping() error {
@@ -96,32 +96,48 @@ func (xt *Xterm) ping() error {
 }
 
 type XtermShell struct {
-	*Xterm
-	output   *bytes.Buffer
-	stdoutFn func(ctx context.Context, stdin *bytes.Buffer, line string) error
-	stderrFn func(ctx context.Context, stdin *bytes.Buffer, line string)
+	xterm  *Xterm
+	ctx    context.Context
+	buf    *bytes.Buffer
+	stdin  func(ctx context.Context, stdin io.Writer)
+	stdout func(ctx context.Context, stdin io.Writer, buf []byte)
+	stderr func(ctx context.Context, stdin io.Writer, buf []byte)
+	exited func(ctx context.Context, code int, out []byte) error
 }
 
-func (xt *XtermShell) Stdout(fn func(ctx context.Context, stdin *bytes.Buffer, line string) error) Shell {
-	xt.stdoutFn = fn
+func (xt *XtermShell) Stdin(fn func(ctx context.Context, stdin io.Writer)) Shell {
+	xt.stdin = fn
 	return xt
 }
 
-func (xt *XtermShell) Stderr(fn func(ctx context.Context, stdin *bytes.Buffer, line string)) Shell {
-	xt.stderrFn = fn
+func (xt *XtermShell) Stdout(fn func(ctx context.Context, stdin io.Writer, buf []byte)) Shell {
+	xt.stdout = fn
 	return xt
 }
 
-func (xt *XtermShell) Stdin(stdin *bytes.Buffer, exited func(ctx context.Context, out *bytes.Buffer, code int) error) (err error) {
-	if exited == nil {
-		exited = func(ctx context.Context, out *bytes.Buffer, code int) error { return nil }
+func (xt *XtermShell) Stderr(fn func(ctx context.Context, stdin io.Writer, buf []byte)) Shell {
+	xt.stderr = fn
+	return xt
+}
+
+func (xt *XtermShell) Exited(fn func(ctx context.Context, code int, out []byte) error) error {
+	if xt.exited = fn; xt.exited == nil {
+		xt.exited = func(ctx context.Context, code int, out []byte) error { return nil }
+	}
+	if xt.stderr == nil {
+		xt.stderr = func(ctx context.Context, stdin io.Writer, buf []byte) {}
+	}
+	if xt.stdout == nil {
+		xt.stdout = func(ctx context.Context, stdin io.Writer, buf []byte) {}
+	}
+	if xt.stdin == nil {
+		return fmt.Errorf("stdin notfound")
+	}
+	if xt.stdin(xt.ctx, xt.buf); xt.buf.Len() == 0 {
+		return fmt.Errorf("stdin empty")
 	}
 
-	if xt.err != nil {
-		return xt.err
-	}
-
-	session, err := xt.shell.NewSession()
+	session, err := xt.xterm.shell.NewSession()
 	if err != nil {
 		return err
 	}
@@ -135,111 +151,104 @@ func (xt *XtermShell) Stdin(stdin *bytes.Buffer, exited func(ctx context.Context
 		return err
 	}
 
-	stdoutPIP, err := session.StdoutPipe()
+	stdin, err := session.StdinPipe()
 	if err != nil {
 		return err
 	}
 
-	stderrPIP, err := session.StderrPipe()
+	stdout, err := session.StdoutPipe()
 	if err != nil {
 		return err
 	}
 
-	var exitCode int
-	if err = session.Start(strings.TrimSpace(stdin.String())); err != nil {
+	stderr, err := session.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	cmd := xt.buf.String()
+	xt.buf.Reset()
+	exitCode := 0
+	if err = session.Start(cmd); err != nil {
 		if exitErr, ok := err.(*ssh.ExitError); ok {
 			exitCode = exitErr.ExitStatus()
-			return exited(xt.ctx, xt.output, exitCode)
+			return xt.exited(xt.ctx, exitCode, xt.buf.Bytes())
 		}
 		return err
 	}
 
-	// stdin
-	stdin.Reset()
-	session.Stdin = stdin
-
 	// stderr
-	if xt.stderrFn != nil {
-		go func() {
-			reader := bufio.NewReader(stderrPIP)
-			for {
-				line, err := reader.ReadString('\n')
-				if err != nil {
-					if err != io.EOF {
-						fmt.Println(err)
-					}
-					break
-				}
-
-				line = strings.TrimPrefix(line, fmt.Sprintf("[sudo] password for %s:", xt.host.Username(xt.ctx)))
-				line = strings.TrimSpace(line)
-				if xt.stderrFn != nil {
-					xt.stderrFn(xt.ctx, stdin, line)
-				}
-			}
-		}()
-	}
+	go xt.reader(xt.ctx, stderr, func(ctx context.Context, buf []byte) {
+		xt.stderr(ctx, stdin, buf)
+	})
 
 	// stdout
-	stdoutReader := bufio.NewReader(stdoutPIP)
-	for {
-		line, err := stdoutReader.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println(err)
-			}
-			break
+	xt.reader(xt.ctx, stdout, func(ctx context.Context, buf []byte) {
+		xt.stdout(ctx, stdin, buf)
+		if buf[len(buf)-1] == '\n' {
+			xt.buf.Write(buf)
 		}
-
-		// FIXME 这里使用逐行读取不能做到自动输入密码，因为输入密码的那一行还没有换行，需要做成按缓冲区读取
-		if (strings.HasPrefix(line, "[sudo] password for ") ||
-			strings.HasPrefix(line, "Password")) &&
-			strings.HasSuffix(line, ": ") {
-			if _, err = stdin.Write([]byte(xt.host.Password(xt.ctx) + "\n")); err != nil {
-				break
-			}
-		}
-
-		line = strings.TrimPrefix(line, fmt.Sprintf("[sudo] password for %s:", xt.host.Username(xt.ctx)))
-		line = strings.TrimSpace(line)
-		xt.output.WriteString(line)
-		if xt.stdoutFn != nil {
-			if err = xt.stdoutFn(xt.ctx, stdin, line); err != nil {
-				return err
-			}
-		}
-	}
+	})
 
 	if err = session.Wait(); err != nil {
 		if exitErr, ok := err.(*ssh.ExitError); ok {
 			exitCode = exitErr.ExitStatus()
-			return exited(xt.ctx, xt.output, exitCode)
+			return xt.exited(xt.ctx, exitCode, xt.buf.Bytes())
 		}
 		return err
 	}
 
-	return exited(xt.ctx, xt.output, exitCode)
+	return xt.exited(xt.ctx, exitCode, xt.buf.Bytes())
+}
+
+func (xt *XtermShell) reader(ctx context.Context, r io.Reader, fn func(ctx context.Context, buf []byte)) {
+	if fn == nil {
+		fn = func(ctx context.Context, buf []byte) {}
+	}
+
+	buf := make([]byte, 0, 1024)
+	reader := bufio.NewReader(r)
+
+	for {
+		if e := ctx.Err(); e != nil {
+			return
+		}
+
+		b, e := reader.ReadByte()
+		if e != nil {
+			break
+		}
+
+		buf = buf[:]
+		buf = append(buf, b)
+		fn(ctx, buf)
+		if b == '\n' {
+			buf = buf[:0]
+			continue
+		}
+	}
 }
 
 type XtermSftp struct {
-	*Xterm
+	xterm *Xterm
 }
 
-func (xt *XtermSftp) CopyFile(ctx context.Context, local, remote string) (err error) {
-	if xt.err != nil {
-		return xt.err
+// Copy copy src file or dir to dst dir
+func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) (err error) {
+	if xt.xterm.err != nil {
+		return xt.xterm.err
 	}
 
-	return filepath.WalkDir(local, func(p string, d fs.DirEntry, e error) error {
-		file := filepath.ToSlash(strings.TrimPrefix(p, filepath.Dir(local)))
-		file = path.Join(remote, file)
+	return filepath.WalkDir(src, func(p string, d fs.DirEntry, e error) error {
+		file := filepath.ToSlash(strings.TrimPrefix(p, filepath.Dir(src)))
+		file = path.Join(dst, file)
 		if d.IsDir() {
 			fmt.Println("创建远程目录:", file)
-			return xt.sftp.MkdirAll(file)
+			return xt.xterm.sftp.MkdirAll(file)
 		}
 
 		fmt.Println("传输远程文件:", file)
-		dstFile, err := xt.sftp.Create(file)
+		dstFile, err := xt.xterm.sftp.Create(file)
 		if err != nil {
 			return err
 		}

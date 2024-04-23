@@ -1,8 +1,8 @@
 package host
 
 import (
-	"bytes"
 	"context"
+	"io"
 )
 
 var pty = make(map[string]func(ctx context.Context, runtime Runtime) Pty)
@@ -25,11 +25,12 @@ type Pty interface {
 }
 
 type Shell interface {
-	Stdin(stdin *bytes.Buffer, exited func(ctx context.Context, out *bytes.Buffer, code int) error) error
-	Stdout(func(ctx context.Context, stdin *bytes.Buffer, line string) error) Shell
-	Stderr(func(ctx context.Context, stdin *bytes.Buffer, line string)) Shell
+	Stdin(func(ctx context.Context, stdin io.Writer)) Shell
+	Stdout(func(ctx context.Context, stdin io.Writer, buf []byte)) Shell
+	Stderr(func(ctx context.Context, stdin io.Writer, buf []byte)) Shell
+	Exited(func(ctx context.Context, code int, out []byte) error) error
 }
 
 type Sftp interface {
-	CopyFile(ctx context.Context, local, remote string) error
+	Copy(ctx context.Context, src, dst string) error
 }
