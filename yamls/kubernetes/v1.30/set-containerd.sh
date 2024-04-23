@@ -111,6 +111,7 @@ fi
 #fi
 
 #写入containerd配置文件
+#输出默认配置文件(containerd config default > config.toml)
 echo "写入containerd配置文件"
 cat > ${CONTAINERD_TOML_FILE} <<EOF
 version = 2

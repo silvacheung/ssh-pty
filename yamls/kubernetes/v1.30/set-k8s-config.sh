@@ -214,39 +214,46 @@ evictionSoftGracePeriod:
 # - "8.8.8.8"
 # - "114.114.114.114"
 
-#---
-## see https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta4/
-#apiVersion: kubeadm.k8s.io/v1beta3
-#kind: JoinConfiguration
-#
-#nodeRegistration:
-#  name: "{{ .Host.Hostname }}"
-#  criSocket: "unix:///var/run/containerd/containerd.sock"
-#  imagePullPolicy: "IfNotPresent"
-#  ignorePreflightErrors:
-#  - "IsPrivilegedUser"
-#  - "FileExisting-crictl"
-#  - "ImagePull"
-#  taints:
-#  - key: "node-role.kubernetes.io/control-plane"
-#    value: ""
-#    effect: "NoSchedule"
-#  kubeletExtraArgs:
-#    node-ip: "{{ .Host.Internal }}"
-#    hostname-override: "{{ .Host.Hostname }}"
-#
-#controlPlane:
-#  certificateKey: "{{ .Configs.K8s.CertificateKey }}"
-#  localAPIEndpoint:
-#    advertiseAddress: "0.0.0.0"
-#    bindPort: 6443
-#
-#discovery:
-#  bootstrapToken:
-#    unsafeSkipCAVerification: true
-#    token: "{{ .Configs.K8s.BootstrapToken }}"
-#    apiServerEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint }}"
-#
+---
+# see https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta4/
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+
+nodeRegistration:
+  name: "{{ .Host.Hostname }}"
+  criSocket: "unix:///var/run/containerd/containerd.sock"
+  imagePullPolicy: "IfNotPresent"
+  ignorePreflightErrors:
+  - "IsPrivilegedUser"
+  - "FileExisting-crictl"
+  - "ImagePull"
+  taints:
+  - key: "node-role.kubernetes.io/control-plane"
+    value: ""
+    effect: "NoSchedule"
+  kubeletExtraArgs:
+    node-ip: "{{ .Host.Internal }}"
+    hostname-override: "{{ .Host.Hostname }}"
+
+{{- $this := .Host }}
+{{- $caKey := .Configs.K8s.CertificateKey }}
+{{- range $cp := .Configs.K8s.ControlPlanes }}
+{{- if eq $this.Hostname $cp }}
+controlPlane:
+  certificateKey: "{{ $caKey }}"
+  localAPIEndpoint:
+    advertiseAddress: "0.0.0.0"
+    bindPort: 6443
+{{- end }}
+{{- end }}
+
+discovery:
+  tlsBootstrapToken: "{{ .Configs.K8s.BootstrapToken }}"
+  bootstrapToken:
+    unsafeSkipCAVerification: true
+    token: "{{ .Configs.K8s.BootstrapToken }}"
+    apiServerEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint }}"
+
 #skipPhases:
 #- "addon/kube-proxy"
 

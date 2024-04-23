@@ -8,24 +8,62 @@ import (
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"io"
+	"io/fs"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 )
 
-var clients = new(sync.Map)
+var xterm = new(sync.Map)
 
 type Xterm struct {
-	ctx     context.Context
-	mux     *sync.Mutex
-	runtime Runtime
-	client  *ssh.Client
-	sftp    *sftp.Client
+	ctx   context.Context
+	host  Runtime
+	shell *ssh.Client
+	sftp  *sftp.Client
+	err   error
 }
 
-func NewXterm(ctx context.Context, runtime Runtime) Pty {
-	return &Xterm{ctx: ctx, mux: new(sync.Mutex), runtime: runtime}
+func NewXterm(ctx context.Context, host Runtime) Pty {
+	var xt *Xterm
+	key := fmt.Sprintf("%s(%s)", host.Hostname(ctx), host.Address(ctx))
+	val, ok := xterm.Load(key)
+	if ok && val != nil {
+		xt = val.(*Xterm)
+		if err := xt.ping(); err == nil {
+			return xt
+		}
+	}
+
+	xt = &Xterm{ctx: ctx, host: host}
+	authMethods := make([]ssh.AuthMethod, 0, 2)
+	if pass := xt.host.Password(xt.ctx); len(pass) > 0 {
+		authMethods = append(authMethods, ssh.Password(pass))
+	}
+	if KEY := xt.host.PrivateKEY(xt.ctx); len(KEY) > 0 {
+		signer, err := ssh.ParsePrivateKey([]byte(KEY))
+		if err != nil {
+			xt.err = err
+			return xt
+		}
+		authMethods = append(authMethods, ssh.PublicKeys(signer))
+	}
+	endpoint := xt.host.Address(xt.ctx) + ":" + xt.host.Port(xt.ctx)
+	xt.shell, xt.err = ssh.Dial("tcp", endpoint, &ssh.ClientConfig{
+		Config:          ssh.Config{},
+		User:            xt.host.Username(xt.ctx),
+		Auth:            authMethods,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         time.Second * 10,
+	})
+	if xt.err == nil {
+		xt.sftp, xt.err = sftp.NewClient(xt.shell)
+	}
+
+	return xt
 }
 
 func (xt *Xterm) Shell(ctx context.Context) Shell {
@@ -36,47 +74,25 @@ func (xt *Xterm) Sftp(ctx context.Context) Sftp {
 	return &XtermSftp{Xterm: xt}
 }
 
-func (xt *Xterm) connTo(ctx context.Context) (err error) {
-	endpoint := xt.runtime.Address(xt.ctx) + ":" + xt.runtime.Port(xt.ctx)
-	if v, ok := clients.Load("ssh:" + endpoint); ok && v != nil {
-		xt.client = v.(*ssh.Client)
+func (xt *Xterm) ping() error {
+	if xt.shell == nil {
+		return fmt.Errorf("xterm ping: ssh client nil")
 	}
-	if v, ok := clients.Load("sftp:" + endpoint); ok && v != nil {
-		xt.sftp = v.(*sftp.Client)
+	if xt.err != nil {
+		return xt.err
 	}
-	xt.mux.Lock()
-	defer xt.mux.Unlock()
-	if xt.client == nil || xt.sftp == nil {
-		authMethods := make([]ssh.AuthMethod, 0, 2)
-		if len(xt.runtime.Password(xt.ctx)) > 0 {
-			authMethods = append(authMethods, ssh.Password(xt.runtime.Password(xt.ctx)))
-		}
-
-		if len(xt.runtime.PrivateKEY(xt.ctx)) > 0 {
-			signer, err := ssh.ParsePrivateKey([]byte(xt.runtime.PrivateKEY(xt.ctx)))
-			if err != nil {
-				return err
-			}
-			authMethods = append(authMethods, ssh.PublicKeys(signer))
-		}
-
-		xt.client, err = ssh.Dial("tcp", endpoint, &ssh.ClientConfig{
-			Config:          ssh.Config{},
-			User:            xt.runtime.Username(xt.ctx),
-			Auth:            authMethods,
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-			Timeout:         time.Second * 10,
-		})
-		if err != nil {
-			return err
-		}
-
-		xt.sftp, err = sftp.NewClient(xt.client)
-		clients.Store("ssh:"+endpoint, xt.client)
-		clients.Store("sftp:"+endpoint, xt.sftp)
+	session, err := xt.shell.NewSession()
+	if err != nil {
+		return err
 	}
-
-	return err
+	pong, err := session.Output(`echo "pong"`)
+	if err != nil {
+		return err
+	}
+	if string(pong) != "pong" {
+		return fmt.Errorf("xterm ping: not echo pong")
+	}
+	return nil
 }
 
 type XtermShell struct {
@@ -101,11 +117,11 @@ func (xt *XtermShell) Stdin(stdin *bytes.Buffer, exited func(ctx context.Context
 		exited = func(ctx context.Context, out *bytes.Buffer, code int) error { return nil }
 	}
 
-	if err = xt.connTo(xt.ctx); err != nil {
-		return err
+	if xt.err != nil {
+		return xt.err
 	}
 
-	session, err := xt.client.NewSession()
+	session, err := xt.shell.NewSession()
 	if err != nil {
 		return err
 	}
@@ -155,7 +171,7 @@ func (xt *XtermShell) Stdin(stdin *bytes.Buffer, exited func(ctx context.Context
 					break
 				}
 
-				line = strings.TrimPrefix(line, fmt.Sprintf("[sudo] password for %s:", xt.runtime.Username(xt.ctx)))
+				line = strings.TrimPrefix(line, fmt.Sprintf("[sudo] password for %s:", xt.host.Username(xt.ctx)))
 				line = strings.TrimSpace(line)
 				if xt.stderrFn != nil {
 					xt.stderrFn(xt.ctx, stdin, line)
@@ -179,12 +195,12 @@ func (xt *XtermShell) Stdin(stdin *bytes.Buffer, exited func(ctx context.Context
 		if (strings.HasPrefix(line, "[sudo] password for ") ||
 			strings.HasPrefix(line, "Password")) &&
 			strings.HasSuffix(line, ": ") {
-			if _, err = stdin.Write([]byte(xt.runtime.Password(xt.ctx) + "\n")); err != nil {
+			if _, err = stdin.Write([]byte(xt.host.Password(xt.ctx) + "\n")); err != nil {
 				break
 			}
 		}
 
-		line = strings.TrimPrefix(line, fmt.Sprintf("[sudo] password for %s:", xt.runtime.Username(xt.ctx)))
+		line = strings.TrimPrefix(line, fmt.Sprintf("[sudo] password for %s:", xt.host.Username(xt.ctx)))
 		line = strings.TrimSpace(line)
 		xt.output.WriteString(line)
 		if xt.stdoutFn != nil {
@@ -210,36 +226,32 @@ type XtermSftp struct {
 }
 
 func (xt *XtermSftp) CopyFile(ctx context.Context, local, remote string) (err error) {
-	if err = xt.connTo(xt.ctx); err != nil {
-		return err
+	if xt.err != nil {
+		return xt.err
 	}
 
-	// read src file
-	src, err := os.Open(local)
-	if err != nil {
-		return err
-	}
-	defer src.Close()
+	return filepath.WalkDir(local, func(p string, d fs.DirEntry, e error) error {
+		file := filepath.ToSlash(strings.TrimPrefix(p, filepath.Dir(local)))
+		file = path.Join(remote, file)
+		if d.IsDir() {
+			fmt.Println("创建远程目录:", file)
+			return xt.sftp.MkdirAll(file)
+		}
 
-	// src stat
-	stat, err := src.Stat()
-	if err != nil {
-		return err
-	}
+		fmt.Println("传输远程文件:", file)
+		dstFile, err := xt.sftp.Create(file)
+		if err != nil {
+			return err
+		}
+		defer dstFile.Close()
 
-	// the dst file mod will be 0666
-	dst, err := xt.sftp.Create(remote)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
+		srcFile, err := os.Open(p)
+		if err != nil {
+			return err
+		}
+		defer srcFile.Close()
 
-	// dst chmod
-	if err = dst.Chmod(stat.Mode()); err != nil {
+		_, err = io.Copy(dstFile, srcFile)
 		return err
-	}
-
-	// copy
-	_, err = io.Copy(dst, src)
-	return
+	})
 }

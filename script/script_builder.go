@@ -65,7 +65,7 @@ func (b *Template) Building(ctx context.Context, h host.Runtime, fn func(ctx con
 
 	// 生成文件
 	tempFile := os.TempDir() + "/ssh-pty-" + hostname + "-" + filename
-	//if err := os.Remove(tempFile); err != nil && !os.IsNotExist(err) {
+	//if err = os.Remove(tempFile); err != nil && !os.IsNotExist(err) {
 	//	fn(ctx, fmt.Errorf("%s remove temp file: %w", hostname, err))
 	//	return
 	//}
@@ -78,7 +78,8 @@ func (b *Template) Building(ctx context.Context, h host.Runtime, fn func(ctx con
 	// 创建文件夹
 	buffer.Reset()
 	buffer.WriteString("mkdir -p " + workdir)
-	err = h.PTY(ctx, "xterm").Shell(ctx).Stdin(buffer, func(ctx context.Context, out *bytes.Buffer, code int) error {
+	pty := h.PTY(ctx, "xterm")
+	err = pty.Shell(ctx).Stdin(buffer, func(ctx context.Context, out *bytes.Buffer, code int) error {
 		if code != 0 {
 			return fmt.Errorf("%s exitcode: %d %s", hostname, code, out.String())
 		}
@@ -91,7 +92,7 @@ func (b *Template) Building(ctx context.Context, h host.Runtime, fn func(ctx con
 	}
 
 	fmt.Printf("拷贝脚本文件[%s]: %s --> %s\n", hostname, tempFile, remoteFile)
-	err = h.PTY(ctx, "xterm").Sftp(ctx).CopyFile(ctx, tempFile, remoteFile)
+	err = pty.Sftp(ctx).CopyFile(ctx, tempFile, remoteFile)
 	if err != nil {
 		fn(ctx, fmt.Errorf("%s pty sftp: %w", hostname, err))
 		return

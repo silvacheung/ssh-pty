@@ -132,7 +132,7 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	cfgHosts := exec.config.GetStringSlice("hosts")
 	cfgScripts := exec.config.GetStringSlice("scripts")
 	cfgSpecial := exec.config.GetStringMapStringSlice("special")
-	//cfgSftp := exec.config.GetStringMapStringSlice("sftp")
+	cfgSftp := exec.config.GetStringMapStringSlice("sftp")
 
 	// 读取执行主机
 	hosts := make([]host.Runtime, 0, len(cfgHosts))
@@ -155,25 +155,21 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	}
 
 	// 传输SFTP数据
-	//wg := new(sync.WaitGroup)
-	//sftpErrC := make(chan error, len(cfgSftp))
-	//for hostname, files := range cfgSftp {
-	//	if h, ok := mapping[hostname]; ok {
-	//		fmt.Printf("传输SFTP数据[%s]: %v\n", hostname, files)
-	//		wg.Add(1)
-	//		go func() {
-	//			defer wg.Done()
-	//			if err := <-exec.sftpToRemote(ctx, h, files...); err != nil {
-	//				sftpErrC <- err
-	//			}
-	//		}()
-	//	}
-	//}
+	sftpErrC := make(chan error, len(cfgSftp))
+	for hostname, files := range cfgSftp {
+		if h, ok := mapping[hostname]; ok {
+			fmt.Printf("传输SFTP数据[%s]: %v\n", hostname, files)
+			if err := <-exec.sftpToRemote(ctx, h, files...); err != nil {
+				sftpErrC <- err
+			}
+		}
+	}
 
-	//wg.Wait()
-	//if err := <-exec.handleErrorChannel(sftpErrC); err != nil {
-	//	return err
-	//}
+	if err := <-exec.handleErrorChannel(sftpErrC); err != nil {
+		return err
+	}
+
+	return nil
 
 	// 读取执行脚本
 	scripts := make(map[string][]scriptInfo, len(cfgSpecial))
@@ -220,36 +216,35 @@ func (exec *Executor) Executing(ctx context.Context) error {
 	fmt.Printf("设置脚本数据: %s\n", string(metadata_))
 
 	// 开始构建脚本
-	wg := new(sync.WaitGroup)
-	scriptErrC := make(chan error, len(scripts)*2)
+	scriptErrC := make(chan error, len(scripts))
 	for hostname, files := range scripts {
 		if h, ok := mapping[hostname]; ok {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				metadata = metadata.SetThisHost(ctx, h)
-				if err := <-exec.building(ctx, h, metadata, files...); err != nil {
-					scriptErrC <- err
-					return
-				}
-				if err := <-exec.running(ctx, h, files...); err != nil {
-					scriptErrC <- err
-					return
-				}
-			}()
+			metadata = metadata.SetThisHost(ctx, h)
+			if err := <-exec.building(ctx, h, metadata, files...); err != nil {
+				scriptErrC <- err
+			}
 		}
 	}
 
-	wg.Wait()
-	err := <-exec.handleErrorChannel(scriptErrC)
+	if err := <-exec.handleErrorChannel(scriptErrC); err != nil {
+		return err
+	}
 
-	return err
+	for _, hostname := range []string{"lwy-cn-cd-tpy-std-1721667201", "lwy-cn-cd-tpy-std-1721667202", "lwy-cn-cd-tpy-std-1721667203"} {
+		files := scripts[hostname]
+		if h, ok := mapping[hostname]; ok && len(files) > 0 {
+			if err := <-exec.running(ctx, h, files...); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (exec *Executor) building(ctx context.Context, h host.Runtime, metadata Metadata, files ...scriptInfo) <-chan error {
 	errC := make(chan error, len(files))
-
-	buildFn := func(ctx context.Context, errC chan error, h host.Runtime, metadata Metadata, file scriptInfo) {
+	for _, file := range files {
 		exec.runtime.Builder(ctx, "go-tmpl").
 			Filename(file.file).
 			Template(file.tmpl).
@@ -258,45 +253,14 @@ func (exec *Executor) building(ctx context.Context, h host.Runtime, metadata Met
 				errC <- err
 			})
 	}
-
-	if exec.parallel {
-		wg := new(sync.WaitGroup)
-		for _, file := range files {
-			wg.Add(1)
-			go func(file scriptInfo) {
-				defer wg.Done()
-				buildFn(ctx, errC, h, metadata, file)
-			}(file)
-		}
-		wg.Wait()
-	} else {
-		for _, file := range files {
-			buildFn(ctx, errC, h, metadata, file)
-		}
-	}
-
 	return exec.handleErrorChannel(errC)
 }
 
 func (exec *Executor) running(ctx context.Context, h host.Runtime, files ...scriptInfo) <-chan error {
 	errC := make(chan error, len(files))
-
-	//if exec.parallel {
-	//	wg := new(sync.WaitGroup)
-	//	for _, file := range files {
-	//		wg.Add(1)
-	//		go func(file scriptInfo) {
-	//			defer wg.Done()
-	//			errC <- exec.runtime.Runner(ctx, "ssh-pty").Run(ctx, file.file, h)
-	//		}(file)
-	//	}
-	//	wg.Wait()
-	//} else {
 	for _, file := range files {
 		errC <- exec.runtime.Runner(ctx, "ssh-pty").Run(ctx, file.file, h)
 	}
-	//}
-
 	return exec.handleErrorChannel(errC)
 }
 
