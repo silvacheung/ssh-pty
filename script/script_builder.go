@@ -47,10 +47,9 @@ func (b *Template) Building(ctx context.Context, h host.Runtime, fn func(ctx con
 	// 文件信息
 	workdir := h.Workdir(ctx)
 	_, filename := filepath.Split(b.filename)
-	remoteFile := workdir + "/" + filename
 
 	// 渲染模板
-	fmt.Printf("渲染脚本文件[%s]:%s\n", hostname, remoteFile)
+	fmt.Printf("渲染脚本文件[%s]:%s\n", hostname, b.filename)
 	tpl, err := template.New(b.filename).Parse(b.template)
 	if err != nil {
 		fn(ctx, fmt.Errorf("%s template parse: %w", hostname, err))
@@ -64,15 +63,19 @@ func (b *Template) Building(ctx context.Context, h host.Runtime, fn func(ctx con
 	}
 
 	// 生成文件
-	tempFile := os.TempDir() + "/ssh-pty-" + hostname + "-" + filename
-	fmt.Printf("生成脚本文件[%s]:%s\n", hostname, tempFile)
+	tempPath := filepath.Join(os.TempDir(), "ssh-pty", hostname)
+	if err = os.MkdirAll(tempPath, 0666); err != nil {
+		fn(ctx, fmt.Errorf("%s make temp dir: %w", hostname, err))
+		return
+	}
+	tempFile := filepath.Join(tempPath, filename)
+	fmt.Printf("生成脚本文件[%s]:%s -> %s\n", hostname, b.filename, tempFile)
 	if err = os.WriteFile(tempFile, buffer.Bytes(), 0666); err != nil {
 		fn(ctx, fmt.Errorf("%s write temp file: %w", hostname, err))
 		return
 	}
 
-	fmt.Printf("拷贝脚本文件[%s]: %s --> %s\n", hostname, tempFile, remoteFile)
-	err = h.PTY(ctx, "xterm").Sftp(ctx).Copy(ctx, tempFile, remoteFile)
+	err = h.PTY(ctx, "xterm").Sftp(ctx).Copy(ctx, tempFile, workdir)
 	if err != nil {
 		fn(ctx, fmt.Errorf("%s pty sftp: %w", hostname, err))
 		return

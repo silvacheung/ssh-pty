@@ -8,26 +8,23 @@ import (
 	"log"
 )
 
-var config string
+var configYaml string
 
 func init() {
-	flag.StringVar(&config, "config", "D:\\workspace\\ssh-pty\\yamls\\kubernetes\\v1.30\\k8s-install.yaml", "指定一个脚本执行配置文件")
+	flag.StringVar(&configYaml, "config", "D:\\workspace\\ssh-pty\\yamls\\kubernetes\\v1.30\\k8s-install.yaml", "指定一个脚本执行配置文件")
 	flag.Usage = func() { flag.PrintDefaults() }
 	flag.Parse()
 }
 
 func main() {
 	ctx := context.Background()
-	cfg, err := conf.New(config)
+	config, err := conf.New(configYaml)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	err = script.
-		NewExecutor().
-		SetRuntime(script.NewFactory()).
-		SetParallel(true).
-		SetConfig(cfg).
+		NewExecutor(config, script.NewFactory()).
 		Executing(ctx)
 
 	if err != nil {

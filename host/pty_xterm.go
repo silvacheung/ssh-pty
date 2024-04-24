@@ -234,25 +234,34 @@ type XtermSftp struct {
 }
 
 // Copy copy src file or dir to dst dir
-func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) (err error) {
+func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) error {
 	if xt.xterm.err != nil {
 		return xt.xterm.err
 	}
 
+	hostname := xt.xterm.host.Hostname(ctx)
 	return filepath.WalkDir(src, func(p string, d fs.DirEntry, e error) error {
 		file := filepath.ToSlash(strings.TrimPrefix(p, filepath.Dir(src)))
 		file = path.Join(dst, file)
 		if d.IsDir() {
-			fmt.Println("创建远程目录:", file)
+			fmt.Printf("创建远程目录[%s]:%s -> %s\n", hostname, p, file)
 			return xt.xterm.sftp.MkdirAll(file)
 		}
 
-		fmt.Println("传输远程文件:", file)
+		fmt.Printf("传输远程文件[%s]:%s -> %s\n", hostname, p, file)
 		dstFile, err := xt.xterm.sftp.Create(file)
 		if err != nil {
 			return err
 		}
 		defer dstFile.Close()
+
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if info.Size() == 0 {
+			return nil
+		}
 
 		srcFile, err := os.Open(p)
 		if err != nil {

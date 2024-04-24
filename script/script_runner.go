@@ -17,7 +17,7 @@ func NewSSHPty(ctx context.Context) Runner {
 	return &SSHPty{ctx: ctx}
 }
 
-func (r *SSHPty) Run(ctx context.Context, filename string, h host.Runtime) error {
+func (r *SSHPty) Run(ctx context.Context, h host.Runtime, filename string) error {
 	// 获取指定文件
 	workdir := h.Workdir(ctx)
 	_, file := filepath.Split(filename)

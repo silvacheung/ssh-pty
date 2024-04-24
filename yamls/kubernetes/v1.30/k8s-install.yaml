@@ -1,7 +1,7 @@
 hosts:
-  - enp3s0://root:lwy67201@172.16.67.201:22/?hostname=lwy-cn-cd-tpy-std-1721667201&internal=172.16.67.201&workdir=/root/.ssh-pty/scripts
-  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/.ssh-pty/scripts
-  - enp3s0://root:lwy67203@172.16.67.203:22/?hostname=lwy-cn-cd-tpy-std-1721667203&internal=172.16.67.203&workdir=/root/.ssh-pty/scripts
+  - enp3s0://root:lwy67201@172.16.67.201:22/?hostname=lwy-cn-cd-tpy-std-1721667201&internal=172.16.67.201&workdir=/root/k8s
+  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/k8s
+  - enp3s0://root:lwy67203@172.16.67.203:22/?hostname=lwy-cn-cd-tpy-std-1721667203&internal=172.16.67.203&workdir=/root/k8s
 
 configs:
   K8s:
@@ -62,33 +62,43 @@ configs:
       - "lwy-cn-cd-tpy-std-1721667202"
       - "lwy-cn-cd-tpy-std-1721667203"
 
+awaits:
+  lwy-cn-cd-tpy-std-1721667202:
+    - "lwy-cn-cd-tpy-std-1721667201"
+  lwy-cn-cd-tpy-std-1721667203:
+    - "lwy-cn-cd-tpy-std-1721667201"
+
 scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-resolv-conf.sh
-  #- D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-apt.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-apt.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-hostname.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-hosts.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-pre-check.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-os-system.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-ntp-server.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-containerd.sh
-  #- D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-config.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-audit.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-boot.sh
 
-#special:
-#  lwy-cn-cd-tpy-std-1721667201:
-#    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
-#    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
-#  lwy-cn-cd-tpy-std-1721667202:
-#    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
-#    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
-#  lwy-cn-cd-tpy-std-1721667203:
-#    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
-#    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+special:
+  lwy-cn-cd-tpy-std-1721667201:
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-boot.sh
+  lwy-cn-cd-tpy-std-1721667202:
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-boot.sh
+  lwy-cn-cd-tpy-std-1721667203:
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-config.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-lb-start.sh
+    - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-boot.sh
 
 sftp:
   lwy-cn-cd-tpy-std-1721667201:
-    - F:\cri\runc.amd64
+    - F:\cri\
+  lwy-cn-cd-tpy-std-1721667202:
+    - F:\cri\
+  lwy-cn-cd-tpy-std-1721667203:
+    - F:\cri\

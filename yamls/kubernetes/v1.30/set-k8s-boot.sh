@@ -34,8 +34,8 @@ kubectl taint nodes {{ $host.Hostname }} node-role.kubernetes.io/control-plane=:
 kubectl label --overwrite node {{ $host.Hostname }} node-role.kubernetes.io/worker-node=
     {{- else }}
 kubeadm join --config /etc/kubernetes/kubeadm-config.yaml
-kubectl taint nodes {{ $host.Hostname }} node-role.kubernetes.io/control-plane=:NoSchedule-
-kubectl label --overwrite node {{ $host.Hostname }} node-role.kubernetes.io/worker-node=
+#kubectl taint nodes {{ $host.Hostname }} node-role.kubernetes.io/control-plane=:NoSchedule-
+#kubectl label --overwrite node {{ $host.Hostname }} node-role.kubernetes.io/worker-node=
     {{- end }}
   {{- end }}
 {{- end }}
