@@ -80,6 +80,7 @@ scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-kubeadm.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-config.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-audit.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\set-k8s-security.sh
 
 special:
   lwy-cn-cd-tpy-std-1721667201:

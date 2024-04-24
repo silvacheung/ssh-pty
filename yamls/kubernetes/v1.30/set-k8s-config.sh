@@ -32,6 +32,7 @@ apiServer:
     authorization-mode: "Node,RBAC"
     enable-admission-plugins: "AlwaysPullImages,ServiceAccount,NamespaceLifecycle,NodeRestriction,LimitRanger,ResourceQuota,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,PodNodeSelector,PodSecurity"
     profiling: "false"
+    #allow-privileged: "true"
     request-timeout: "1m0s"
     service-account-lookup: "true"
     audit-log-format: "json"
