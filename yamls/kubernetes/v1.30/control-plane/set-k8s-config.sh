@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
 set -e
 
-#CPE_ADDR="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[1]}')"
-#CPE_PORT="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[2]}')"
+#HA_ADDR="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[1]}')"
+#HA_PORT="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[2]}')"
+CONTROL_PLANE_ENDPOINT_DOMAIN="{{ .Configs.K8s.ControlPlaneEndpoint.Domain }}"
+CONTROL_PLANE_ENDPOINT_ADDRESS="{{ .Configs.K8s.ControlPlaneEndpoint.Address }}"
+CONTROL_PLANE_ENDPOINT_PORT="{{ .Configs.K8s.ControlPlaneEndpoint.Port }}"
+CONTROL_PLANE_ENDPOINT=""
+
+if [ "${CONTROL_PLANE_ENDPOINT_PORT}" == "" ]; then
+  CONTROL_PLANE_ENDPOINT_PORT="6443"
+fi
+
+if [ "${CONTROL_PLANE_ENDPOINT_DOMAIN}" != "" ]; then
+  CONTROL_PLANE_ENDPOINT="${CONTROL_PLANE_ENDPOINT_DOMAIN}:${CONTROL_PLANE_ENDPOINT_PORT}"
+elif [ "${CONTROL_PLANE_ENDPOINT_ADDRESS}" != "" ]; then
+  CONTROL_PLANE_ENDPOINT="${CONTROL_PLANE_ENDPOINT_ADDRESS}:${CONTROL_PLANE_ENDPOINT_PORT}"
+fi
 
 cat >/etc/kubernetes/kubeadm-config.yaml<<EOF
 ---
@@ -14,7 +28,7 @@ kind: ClusterConfiguration
 kubernetesVersion: "{{ .Configs.K8s.Version }}"
 clusterName: "{{ .Configs.K8s.ClusterName }}"
 imageRepository: "{{ .Configs.K8s.ImageRepository }}"
-controlPlaneEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint }}"
+controlPlaneEndpoint: "${CONTROL_PLANE_ENDPOINT}"
 certificatesDir: "/etc/kubernetes/pki"
 
 etcd:
@@ -95,16 +109,16 @@ kind: InitConfiguration
 
 certificateKey: "{{ .Configs.K8s.CertificateKey }}"
 bootstrapTokens:
-- token: "cb6xll.lo5z8trai8zwzh7t"
+- token: "{{ .Configs.K8s.BootstrapToken }}"
   description: "kubeadm bootstrap token"
   ttl: "24h"
-- token: "52z37x.i5cgj71fe6rserqi"
-  description: "another bootstrap token"
-  usages:
-  - authentication
-  - signing
-  groups:
-  - system:bootstrappers:kubeadm:default-node-token
+#- token: ""
+#  description: "another bootstrap token"
+#  usages:
+#  - authentication
+#  - signing
+#  groups:
+#  - system:bootstrappers:kubeadm:default-node-token
 
 localAPIEndpoint:
   advertiseAddress: "0.0.0.0"
@@ -126,8 +140,8 @@ nodeRegistration:
     node-ip: "{{ .Host.Internal }}"
     hostname-override: "{{ .Host.Hostname }}"
 
-skipPhases:
-- "addon/kube-proxy"
+#skipPhases:
+#- "addon/kube-proxy"
 
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kube-proxy-config.v1alpha1/
@@ -236,24 +250,18 @@ nodeRegistration:
     node-ip: "{{ .Host.Internal }}"
     hostname-override: "{{ .Host.Hostname }}"
 
-{{- $this := .Host }}
-{{- $caKey := .Configs.K8s.CertificateKey }}
-{{- range $cp := .Configs.K8s.ControlPlanes }}
-{{- if eq $this.Hostname $cp }}
 controlPlane:
-  certificateKey: "{{ $caKey }}"
+  certificateKey: "{{ .Configs.K8s.CertificateKey }}"
   localAPIEndpoint:
     advertiseAddress: "0.0.0.0"
     bindPort: 6443
-{{- end }}
-{{- end }}
 
 discovery:
   tlsBootstrapToken: "{{ .Configs.K8s.BootstrapToken }}"
   bootstrapToken:
     unsafeSkipCAVerification: true
     token: "{{ .Configs.K8s.BootstrapToken }}"
-    apiServerEndpoint: "{{ .Configs.K8s.ControlPlaneEndpoint }}"
+    apiServerEndpoint: "${CONTROL_PLANE_ENDPOINT}"
 
 #skipPhases:
 #- "addon/kube-proxy"

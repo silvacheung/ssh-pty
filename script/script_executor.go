@@ -223,6 +223,7 @@ func (u *Unit) executing(ctx context.Context) <-chan error {
 	for _, file := range u.shellFiles {
 		if err := u.runtime.Runner(ctx, "ssh-pty").Run(ctx, u.this, file); err != nil {
 			errC <- err
+			break
 		}
 	}
 	return u.handleErrorC(errC)

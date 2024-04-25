@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-#CPE_ADDR="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[1]}')"
-CPE_PORT="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[2]}')"
-if [ "$CPE_PORT" == "" ]; then
-  CPE_PORT="6443"
-fi
-
-HA_PORT="{{ .Configs.LB.Frontend.Bind }}"
-HA_PORT="${HA_PORT##*:}"
-
 mkdir -p /etc/haproxy
 mkdir -p /etc/keepalived
 
@@ -51,16 +42,16 @@ defaults
   maxconn                 4000
 
 #---------------------------------------------------------------------
-# kube-apiserver frontend which proxys to the control plane nodes
+# kube-api-server frontend which proxys to the control plane nodes
 #---------------------------------------------------------------------
 frontend f-kube-api-server
-  bind  {{ .Configs.LB.Frontend.Bind }} #*:8080
+  bind  {{ .Configs.Frontend.APIServer.Bind }} #*:8080
   mode  tcp
   option  tcplog
   default_backend b-kube-api-server
 
 #---------------------------------------------------------------------
-# round robin balancing for kube-apiserver
+# round robin balancing for kube-api-server
 #---------------------------------------------------------------------
 backend b-kube-api-server
   option  httpchk GET /healthz
@@ -68,24 +59,19 @@ backend b-kube-api-server
   mode  tcp
   option  ssl-hello-chk
   balance leastconn #roundrobin
-  {{- $backends := .Configs.LB.Backend }}
-  {{- range $host := .Hosts }}
-  {{- range $backend := $backends }}
-  {{- if eq $host.Hostname $backend }}
-  server {{ $host.Hostname }} {{ $host.Address }}:$CPE_PORT check
-  {{- end }}
-  {{- end }}
+  {{- range $backend := .Configs.Backends }}
+  server {{ $backend.Hostname }} {{ $backend.Endpoint }} check
   {{- end }}
 
 #---------------------------------------------------------------------
 # haproxy stats dashboard
 #---------------------------------------------------------------------
 frontend stats
+  bind {{ .Configs.Frontend.HaproxyUI.Bind }} #*：8080
   mode http
-  bind {{ .Configs.LB.StatsUI.Bind }} #*：8080
   stats enable
-  stats auth {{ .Configs.LB.StatsUI.Auth }} #admin:123456
   stats refresh 10s
+  stats auth {{ .Configs.Frontend.HaproxyUI.Auth }} #admin:123456
   stats realm "Welcome to the haproxy load balancer status page"
   stats uri /stats
 EOF
@@ -106,7 +92,7 @@ global_defs {
 }
 
 vrrp_script check_haproxy_vip {
-  script "/etc/keepalived/check-apiserver.sh"
+  script "/etc/keepalived/check-api-server.sh"
   interval 3
   weight -2
   fall 10
@@ -114,37 +100,35 @@ vrrp_script check_haproxy_vip {
 }
 
 vrrp_instance haproxy-vip {
-  state {{ if eq .Host.Hostname .Configs.LB.Master }}MASTER{{ else }}BACKUP{{ end }}
-  interface {{ .Host.NetIF }}
+  {{- $this := .Host }}
+  {{- range $idx, $host:= .Hosts }}
+  {{- if eq $host.Hostname $this.Hostname }}
+  {{- if eq $idx 0 }}
+  state MASTER
+  priority 101
+  {{- else }}
+  state BACKUP
+  priority 100
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  interface {{ $this.NetIF }}
   virtual_router_id 51
-  priority {{ if eq .Host.Hostname .Configs.LB.Master }}101{{ else }}100{{ end }}
   advert_int 1
   authentication {
     auth_type PASS
     auth_pass 1111
   }
-  unicast_src_ip {{ .Host.Internal }}
+  unicast_src_ip {{ $this.Internal }}
   unicast_peer {
-    {{- $this := .Host }}
-    {{- $master := .Configs.LB.Master }}
-    {{- $backups := .Configs.LB.Backup }}
     {{- range $host := .Hosts }}
-    {{- if eq $host.Hostname $master }}
-    {{- if eq $host.Hostname $this.Hostname}}{{- else }}
+    {{- if eq $host.Hostname $this.Hostname }}{{- else }}
     {{ $host.Internal }}
-    {{- end }}
-    {{- end }}
-    {{- range $backup := $backups }}
-    {{- if eq $host.Hostname $backup }}
-    {{- if eq $host.Hostname $this.Hostname}}{{- else }}
-    {{ $host.Internal }}
-    {{- end }}
-    {{- end }}
     {{- end }}
     {{- end }}
   }
   virtual_ipaddress {
-    {{ .Configs.LB.VirtualIP }}
+    {{ .Configs.VirtualIP }}
   }
   track_script {
     check_haproxy_vip
@@ -154,18 +138,19 @@ EOF
 
 # 写入Keepalived检测脚本
 echo "写入Keepalived检测脚本"
-cat >/etc/keepalived/check-apiserver.sh<<EOF
+
+HA_BIND="{{ .Configs.Frontend.APIServer.Bind }}"
+HA_PORT="${HA_BIND##*:}"
+IP_CIDR="{{ .Configs.VirtualIP }}"
+HA_ADDR="$(echo "${IP_CIDR}" | awk '{split($1, arr, "/"); print arr[1]}')"
+
+cat >/etc/keepalived/check-api-server.sh<<EOF
 #!/bin/sh
 
-errorExit() {
-    echo "*** $*" 1>&2
-    exit 1
-}
-
-curl --silent --max-time 2 --insecure https://localhost:6443/ -o /dev/null || errorExit "Error GET https://localhost:6443/"
-if ip addr | grep -q {{ .Configs.LB.VirtualIP }}; then
-    curl --silent --max-time 2 --insecure https://{{ .Configs.LB.VirtualIP }}:${HA_PORT}/ -o /dev/null || errorExit "Error GET https://{{ .Configs.LB.VirtualIP }}:${HA_PORT}/"
+curl --silent --max-time 2 --insecure https://localhost:${HA_PORT}/healthz -o /dev/null
+if [ "$(ip addr | grep -c {{ .Configs.VirtualIP }})" == "1" ]; then
+    curl --silent --max-time 2 --insecure https://${HA_ADDR}:${HA_PORT}/healthz -o /dev/null
 fi
 EOF
 
-chmod +x /etc/keepalived/check-apiserver.sh
+chmod +x /etc/keepalived/check-api-server.sh

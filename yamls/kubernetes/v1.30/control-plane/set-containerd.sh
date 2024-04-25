@@ -18,8 +18,14 @@ CNI_VERSION="{{ .Configs.Containerd.CniVersion }}"
 CONTAINERD_TOML_FILE=/etc/containerd/config.toml
 CONTAINERD_UNIT_FILE=/etc/systemd/system/containerd.service
 
+# 是否已安装
+if [[ "$(systemctl is-active containerd)" == "active" && "$(systemctl is-enabled containerd)" == "enabled" ]]; then
+  echo "Containerd运行中,跳过安装Containerd"
+  exit 0
+fi
+
 # 创建文件夹
-mkdir -p ${CRI_DIR}
+mkdir -p "${CRI_DIR}"
 
 # 下载containerd
 CONTAINERD_FILE=containerd-${CONTAINERD_VERSION}-linux-${CONTAINERD_ARCH}.tar.gz
@@ -154,7 +160,11 @@ state = "/run/containerd"
     [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
       SystemdCgroup = true
   [plugins."io.containerd.grpc.v1.cri"]
+    {{- if gt (len .Configs.Containerd.SandBoxImage) 0 }}
     sandbox_image = "{{ .Configs.Containerd.SandBoxImage }}"
+    {{- else }}
+    sandbox_image = "registry.k8s.io/pause:3.9"
+    {{- end }}
     [plugins."io.containerd.grpc.v1.cri".cni]
       bin_dir = "/opt/cni/bin"
       conf_dir = "/etc/cni/net.d"

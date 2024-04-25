@@ -255,14 +255,6 @@ func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) error {
 		}
 		defer dstFile.Close()
 
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-		if info.Size() == 0 {
-			return nil
-		}
-
 		srcFile, err := os.Open(p)
 		if err != nil {
 			return err

@@ -2,11 +2,15 @@
 set -e
 
 # check os release
-cat /etc/issue
+OS="$(head -n 1 /etc/issue | awk '{split($1, arr, " "); print arr[1]}' | tr '[:upper:]' '[:lower:]')"
+if [[ "${OS}" != "debian" && "${OS}" != "unbutu" ]];then
+  echo "not supported os, only debian/unbutu!"
+  exit 1
+fi
 
-#check network access
-{{- range .Hosts}}
-nc -zv {{ .Address }} {{ .Port }}
+# check network access
+{{- range .Hosts }}
+ncat -zv {{ .Address }} {{ .Port }}
 {{- end }}
 
 # check mac address

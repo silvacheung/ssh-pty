@@ -1,23 +1,24 @@
 #!/usr/bin/env bash
 set -e
 
-CPE_ADDR="$(echo "{{ .Configs.K8s.ControlPlaneEndpoint }}" | awk '{split($1, arr, ":"); print arr[1]}')"
-LB_VIP="$(echo "{{ .Configs.LB.VirtualIP }}" | awk '{split($1, arr, "/"); print arr[1]}')"
-
 # 去除/etc/hosts重指定开头结尾的行
-sed -i ':a;$!{N;ba};s@# k8s hosts BEGIN.*# k8s hosts END@@' /etc/hosts
+sed -i ':a;$!{N;ba};s@# K8S HOSTS BEGIN.*# K8S HOSTS END@@' /etc/hosts
 sed -i '/^$/N;/\n$/N;//D' /etc/hosts
 
 # set hosts
 cat >>/etc/hosts<<EOF
-# k8s hosts BEGIN
+# K8S HOSTS BEGIN
 # <ipv4/ipv6> <hostname>.<k8s-cluster-domain> <hostname>
 # eg: 172.16.0.1 my-cn-cd-01-high-001.cluster.local my-cn-cd-01-high-001
-${LB_VIP} ${CPE_ADDR}
+{{- if gt (len .Configs.K8s.ControlPlaneEndpoint.Domain) 0}}
+{{- if gt (len .Configs.K8s.ControlPlaneEndpoint.Address) 0}}
+{{ .Configs.K8s.ControlPlaneEndpoint.Address}} {{ .Configs.K8s.ControlPlaneEndpoint.Domain }}
+{{- end }}
+{{- end }}
 {{- range $host := .Hosts }}
 {{ $host.Address }} {{ $host.Hostname }} {{ $host.Hostname }}.cluster.local
 {{- end }}
-# k8s hosts END
+# K8S HOSTS END
 EOF
 
 # 临时文件去重后覆盖原文件
