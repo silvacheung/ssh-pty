@@ -1,16 +1,16 @@
 hosts:
   - enp3s0://root:lwy67201@172.16.67.201:22/?hostname=lwy-cn-cd-tpy-std-1721667201&internal=172.16.67.201&workdir=/root/k8s
-  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/k8s
+#  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/k8s
 #  - enp3s0://root:lwy67203@172.16.67.203:22/?hostname=lwy-cn-cd-tpy-std-1721667203&internal=172.16.67.203&workdir=/root/k8s
 
 configs:
   K8s:
-    Version: "1.30.0"
+    Version: "1.29.4"
     ClusterName: "alpha"
     ControlPlaneEndpoint:
       Domain: "k8s.api-server.lb"
       Address: "172.16.67.204"
-      Port: "6443"
+      Port: "9443"
     ImageRepository: "registry.aliyuncs.com/google_containers"
     ServiceSubnet: "10.96.0.0/16"
     PodSubnet: "10.244.0.0/24"
@@ -18,7 +18,7 @@ configs:
     IPVSExcludeCIDRs: [ "172.16.0.0/24" ]
     CertificateKey: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
     BootstrapToken: "cb6xll.lo5z8trai8zwzh7t"
-    Untainted: "control-plane"
+    Untainted: "" # "control-plane"
 
   Containerd:
     Arch: "amd64"
@@ -33,7 +33,7 @@ configs:
       quay.io: https://quay.mirrors.ustc.edu.cn
       # k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
       k8s.gcr.io: https://registry.aliyuncs.com/google_containers
-      registry.k8s.io: https://registry.aliyuncs.com/google_containers
+      #registry.k8s.io: https://registry.aliyuncs.com/google_containers
       harbor.local: http://harbor.local
     Auths:
       harbor.local:
@@ -62,13 +62,16 @@ scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\control-plane\set-kubeadm.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\control-plane\set-k8s-config.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\control-plane\set-k8s-audit.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\control-plane\set-k8s-security.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\control-plane\set-k8s-boot.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\control-plane\set-k8s-security.sh
 
 sftp:
   lwy-cn-cd-tpy-std-1721667201:
     - F:\cri\
+    - F:\cni\
   lwy-cn-cd-tpy-std-1721667202:
     - F:\cri\
+    - F:\cni\
   lwy-cn-cd-tpy-std-1721667203:
     - F:\cri\
+    - F:\cni\

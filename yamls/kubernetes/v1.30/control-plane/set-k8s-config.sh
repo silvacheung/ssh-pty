@@ -82,6 +82,7 @@ controllerManager:
     terminated-pod-gc-threshold: "100"
     use-service-account-credentials: "true"
     node-cidr-mask-size: "{{ .Configs.K8s.NodeCidrMaskSize }}"
+    allocate-node-cidrs: "true"
     feature-gates: "RotateKubeletServerCertificate=true"
   extraVolumes:
   - name: "host-time"

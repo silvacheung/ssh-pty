@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-if [[ "$(systemctl is-active kubelet)" == "active" && "$(systemctl is-enabled kubelet)" == "enabled" ]]; then
+if [[ "$(systemctl is-active kubelet)" == "active" ]]; then
   echo "Kubelet运行中,跳过安装kubeadm、kubelet、kubectl"
   exit 0
 fi

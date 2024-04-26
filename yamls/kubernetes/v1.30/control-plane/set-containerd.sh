@@ -19,7 +19,7 @@ CONTAINERD_TOML_FILE=/etc/containerd/config.toml
 CONTAINERD_UNIT_FILE=/etc/systemd/system/containerd.service
 
 # 是否已安装
-if [[ "$(systemctl is-active containerd)" == "active" && "$(systemctl is-enabled containerd)" == "enabled" ]]; then
+if [ "$(systemctl is-active containerd)" == "active" ]; then
   echo "Containerd运行中,跳过安装Containerd"
   exit 0
 fi

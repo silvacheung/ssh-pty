@@ -22,23 +22,29 @@ fi
 
 # haproxy重启
 if [ "$(systemctl is-active haproxy)" != "active" ]; then
+  systemctl daemon-reload
 	systemctl start haproxy
 else
+  systemctl daemon-reload
 	systemctl restart haproxy
 fi
 
 if [ "$(systemctl is-enabled haproxy)" != "enabled" ]; then
+  systemctl daemon-reload
 	systemctl enable haproxy
 fi
 
 # keepalived重启
 if [ "$(systemctl is-active keepalived)" != "active" ]; then
+  systemctl daemon-reload
 	systemctl start keepalived
 else
+  systemctl daemon-reload
 	systemctl restart keepalived
 fi
 
 if [ "$(systemctl is-enabled keepalived)" != "enabled" ]; then
+  systemctl daemon-reload
 	systemctl enable keepalived
 fi
 

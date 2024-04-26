@@ -15,9 +15,7 @@ cat >>/etc/hosts<<EOF
 {{ .Configs.K8s.ControlPlaneEndpoint.Address}} {{ .Configs.K8s.ControlPlaneEndpoint.Domain }}
 {{- end }}
 {{- end }}
-{{- range $host := .Hosts }}
-{{ $host.Address }} {{ $host.Hostname }} {{ $host.Hostname }}.cluster.local
-{{- end }}
+{{ .Host.Address }} {{ .Host.Hostname }} {{ .Host.Hostname }}.cluster.local
 # K8S HOSTS END
 EOF
 

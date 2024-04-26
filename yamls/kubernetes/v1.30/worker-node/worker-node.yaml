@@ -1,15 +1,15 @@
 hosts:
 #  - enp3s0://root:lwy67201@172.16.67.201:22/?hostname=lwy-cn-cd-tpy-std-1721667201&internal=172.16.67.201&workdir=/root/k8s
-#  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/k8s
+  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/k8s
   - enp3s0://root:lwy67203@172.16.67.203:22/?hostname=lwy-cn-cd-tpy-std-1721667203&internal=172.16.67.203&workdir=/root/k8s
 
 configs:
   K8s:
-    Version: "1.30.0"
+    Version: "1.29.4"
     ControlPlaneEndpoint:
       Domain: "k8s.api-server.lb"
       Address: "172.16.67.204"
-      Port: "6443"
+      Port: "9443"
     # 主节点执行 kubeadm init phase upload-certs --upload-certs --config /etc/kubernetes/kubeadm-config.yaml
     CertificateKey: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
     # 主节点执行 kubeadm token create
@@ -51,8 +51,8 @@ scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\worker-node\set-kubeadm.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\worker-node\set-k8s-config.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\worker-node\set-k8s-audit.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\worker-node\set-k8s-security.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\worker-node\set-k8s-boot.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\worker-node\set-k8s-security.sh
 
 sftp:
   lwy-cn-cd-tpy-std-1721667201:

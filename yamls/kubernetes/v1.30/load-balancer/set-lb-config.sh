@@ -54,13 +54,13 @@ frontend f-kube-api-server
 # round robin balancing for kube-api-server
 #---------------------------------------------------------------------
 backend b-kube-api-server
-  option  httpchk GET /healthz
-  http-check  expect  status 200
+  #option  httpchk GET /healthz
+  #http-check  expect  status 200
   mode  tcp
   option  ssl-hello-chk
-  balance leastconn #roundrobin
+  balance roundrobin
   {{- range $backend := .Configs.Backends }}
-  server {{ $backend.Hostname }} {{ $backend.Endpoint }} check
+  server {{ $backend.Hostname }} {{ $backend.Endpoint }} check inter 3s weight 1 fall 3 rise 3
   {{- end }}
 
 #---------------------------------------------------------------------
@@ -147,9 +147,9 @@ HA_ADDR="$(echo "${IP_CIDR}" | awk '{split($1, arr, "/"); print arr[1]}')"
 cat >/etc/keepalived/check-api-server.sh<<EOF
 #!/bin/sh
 
-curl --silent --max-time 2 --insecure https://localhost:${HA_PORT}/healthz -o /dev/null
+curl --silent --max-time 5 --insecure https://localhost:${HA_PORT} -o /dev/null
 if [ "$(ip addr | grep -c {{ .Configs.VirtualIP }})" == "1" ]; then
-    curl --silent --max-time 2 --insecure https://${HA_ADDR}:${HA_PORT}/healthz -o /dev/null
+    curl --silent --max-time 5 --insecure https://${HA_ADDR}:${HA_PORT} -o /dev/null
 fi
 EOF
 
