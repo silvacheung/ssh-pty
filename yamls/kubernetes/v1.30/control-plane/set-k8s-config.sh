@@ -49,6 +49,7 @@ apiServer:
     #allow-privileged: "true"
     request-timeout: "1m0s"
     service-account-lookup: "true"
+    enable-aggregator-routing: "true"
     audit-log-format: "json"
     audit-log-maxbackup: "2"
     audit-log-maxsize: "200"
@@ -82,7 +83,6 @@ controllerManager:
     terminated-pod-gc-threshold: "100"
     use-service-account-credentials: "true"
     node-cidr-mask-size: "{{ .Configs.K8s.NodeCidrMaskSize }}"
-    allocate-node-cidrs: "true"
     feature-gates: "RotateKubeletServerCertificate=true"
   extraVolumes:
   - name: "host-time"
@@ -156,7 +156,11 @@ enableProfiling: false
 clusterCIDR: "{{ .Configs.K8s.PodSubnet }}"
 hostnameOverride: "{{ .Host.Hostname }}"
 mode: "ipvs"
+{{- if gt (len .Configs.K8s.PortRange) 0 }}
+portRange: "{{ .Configs.K8s.PortRange }}"
+{{- else }}
 portRange: "0-0"
+{{- end }}
 
 iptables:
   masqueradeBit: 14

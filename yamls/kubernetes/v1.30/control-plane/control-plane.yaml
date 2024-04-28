@@ -12,10 +12,15 @@ configs:
       Address: "172.16.67.204"
       Port: "9443"
     ImageRepository: "registry.aliyuncs.com/google_containers"
-    ServiceSubnet: "10.96.0.0/16"
-    PodSubnet: "10.244.0.0/24"
-    NodeCidrMaskSize: "25"
+    # 一下三个决定了集群规模
+    # 集群最大节点数: 2^(NodeCidrMaskSize-PodSubnet(CIDR))
+    # 每个节点最大IP数: 2^(32-NodeCidrMaskSize)
+    # 例：2^(24-12) = 4096(节点数) 2^(32-24) = 256(IP数)
+    ServiceSubnet: "10.16.0.0/12"
+    PodSubnet: "10.128.0.0/12"
+    NodeCidrMaskSize: "24"
     IPVSExcludeCIDRs: [ "172.16.0.0/24" ]
+    PortRange: "0-0"
     CertificateKey: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
     BootstrapToken: "cb6xll.lo5z8trai8zwzh7t"
     Untainted: "" # "control-plane"
