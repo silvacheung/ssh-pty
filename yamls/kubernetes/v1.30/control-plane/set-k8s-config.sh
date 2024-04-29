@@ -81,6 +81,7 @@ controllerManager:
     cluster-signing-duration: "87600h"
     profiling: "false"
     terminated-pod-gc-threshold: "100"
+    #allocate-node-cidrs: "true"
     use-service-account-credentials: "true"
     node-cidr-mask-size: "{{ .Configs.K8s.NodeCidrMaskSize }}"
     feature-gates: "RotateKubeletServerCertificate=true"
