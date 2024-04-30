@@ -11,7 +11,7 @@ import (
 var configYaml string
 
 func init() {
-	flag.StringVar(&configYaml, "config", "D:\\workspace\\ssh-pty\\yamls\\kubernetes\\v1.30\\worker-node\\worker-node.yaml", "指定一个脚本执行配置文件")
+	flag.StringVar(&configYaml, "config", "D:\\workspace\\ssh-pty\\yamls\\kubernetes\\v1.30\\load-balancer\\load-balancer.yaml", "指定一个脚本执行配置文件")
 	flag.Usage = func() { flag.PrintDefaults() }
 	flag.Parse()
 }

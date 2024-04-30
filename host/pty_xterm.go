@@ -219,7 +219,6 @@ func (xt *XtermShell) reader(ctx context.Context, r io.Reader, fn func(ctx conte
 			break
 		}
 
-		buf = buf[:]
 		buf = append(buf, b)
 		fn(ctx, buf)
 		if b == '\n' {
