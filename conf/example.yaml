@@ -28,9 +28,9 @@
 #   {{ .Host.Workdir }}
 #
 hosts:
-  - eth0://root:123456@172.16.0.1:22/?hostname=pc-1721601&internal=127.0.0.1&workdir=/var/ssh-pty/scripts
-  - eth0://root:123456@172.16.0.2:22/?hostname=pc-1721602&internal=127.0.0.1&workdir=/var/ssh-pty/scripts
-  - eth0://root:123456@172.16.0.3:22/?hostname=pc-1721603&internal=127.0.0.1&workdir=/var/ssh-pty/scripts
+  - eth0://root:123456@172.16.0.1:22/?hostname=pc-1721601&internal=127.0.0.1&workdir=/var/ssh-pty
+  - eth0://root:123456@172.16.0.2:22/?hostname=pc-1721602&internal=127.0.0.1&workdir=/var/ssh-pty
+  - eth0://root:123456@172.16.0.3:22/?hostname=pc-1721603&internal=127.0.0.1&workdir=/var/ssh-pty
 
 # 配置脚本模板中的数据
 # 在模板中把这个configs当作一个map[string]any
@@ -40,28 +40,56 @@ hosts:
 #
 configs:
   K8s:
-    Version: "1.29.0"
-    ClusterName: "test"
-    ClusterDomain: "cluster.local"
-    NetworkPorts: [ "22", "53", "179", "2379", "2380", "6443", "10250", "10251", "10252", "10253", "10254", "10255", "10256", "10257", "10258", "10259", "30000", "32767", "5000", "5080", "4240", "8472", "6081", "4244", "4245", "4250", "4251", "6060", "6061", "6062", "9878", "9879", "9880", "9881", "9882", "9883", "9884", "9885", "9886", "9887", "9888", "9889", "9890", "9891", "9893", "9962", "9963", "9964", "51871" ]
-    Timezone: Asia/Shanghai
-    NtpServer:
-      - ntp.aliyun.com
-      - time1.cloud.tencent.com
+    Version: "1.29.4"
+    ClusterName: "alpha"
+    ControlPlaneEndpoint:
+      Domain: "k8s.api-server.lb"
+      Address: "172.16.67.204"
+      Port: "9443"
+    ImageRepository: "registry.aliyuncs.com/google_containers"
+    # 一下三个决定了集群规模
+    # 集群最大节点数: 2^(NodeCidrMaskSize-PodSubnet(CIDR))
+    # 每个节点最大IP数: 2^(32-NodeCidrMaskSize)
+    # 例：2^(24-12) = 4096(节点数) 2^(32-24) = 256(IP数)
+    ServiceSubnet: "10.16.0.0/12"
+    PodSubnet: "10.128.0.0/12"
+    NodeCidrMaskSize: "24"
+    IPVSExcludeCIDRs: [ "172.16.0.0/24" ]
+    PortRange: "0-0"
+    CertificateKey: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
+    BootstrapToken: "cb6xll.lo5z8trai8zwzh7t"
+    Untainted: "" # "control-plane"
+
   Containerd:
-    Version: "1.13"
+    Arch: "amd64"
+    Version: "1.7.15"
+    RuncVersion: "1.1.12"
+    CniVersion: "1.4.1"
+    CriCtlVersion: "1.30.0"
     SandBoxImage: "registry.aliyuncs.com/google_containers/pause:3.9"
     Mirrors:
-      - https://registry.aliyuncs.com
-    InsecureRegistries: [ ]
+      docker.io: https://registry.aliyuncs.com
+      gcr.io: https://gcr.mirrors.ustc.edu.cn
+      quay.io: https://quay.mirrors.ustc.edu.cn
+      # k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
+      k8s.gcr.io: https://registry.aliyuncs.com/google_containers
+      #registry.k8s.io: https://registry.aliyuncs.com/google_containers
+      harbor.local: http://harbor.local
     Auths:
-      xxxx.aliyuncs.com:
-        Username: XXX
-        Password: "xxx"
+      harbor.local:
+        Username: "username"
+        Password: "password"
         CAFile: ""
         CertFile: ""
         KeyFile: ""
         SkipTLSVerify: true
+
+# 定义主机上执行脚本之前需要等待执行完毕的其他主机
+awaits:
+  lwy-cn-cd-tpy-std-1721667202:
+    - "lwy-cn-cd-tpy-std-1721667201"
+  lwy-cn-cd-tpy-std-1721667203:
+    - "lwy-cn-cd-tpy-std-1721667201"
 
 # 上面定义的主机需要执行的脚本模板
 # 这些脚本模板将使用上面的configs和Hosts数据进行填充
@@ -74,3 +102,17 @@ scripts:
 special:
   pc-1721601:
     - /ssh-pty/conf/xxx.sh
+
+# 在执行脚本之前需要传输到目标主机上的本机文件
+# 如果是以`/`结尾则把目录下的所有文件传输到主机上
+# 如果以文件或者目录名结尾则会在目标主机上创建这个文件或目录并将文件全部传输到主机
+sftp:
+  lwy-cn-cd-tpy-std-1721667201:
+    - F:\cri\
+    - F:\cni\
+  lwy-cn-cd-tpy-std-1721667202:
+    - F:\cri\
+    - F:\cni\
+  lwy-cn-cd-tpy-std-1721667203:
+    - F:\cri\
+    - F:\cni\

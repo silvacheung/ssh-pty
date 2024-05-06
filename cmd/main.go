@@ -8,17 +8,19 @@ import (
 	"log"
 )
 
-var configYaml string
+var Args struct {
+	YamlFile string
+}
 
 func init() {
-	flag.StringVar(&configYaml, "config", "D:\\workspace\\ssh-pty\\yamls\\kubernetes\\v1.30\\load-balancer\\load-balancer.yaml", "指定一个脚本执行配置文件")
+	flag.StringVar(&Args.YamlFile, "config", "D:\\workspace\\ssh-pty\\yamls\\kubernetes\\v1.30\\load-balancer\\load-balancer.yaml", "指定一个脚本执行配置文件")
 	flag.Usage = func() { flag.PrintDefaults() }
 	flag.Parse()
 }
 
 func main() {
 	ctx := context.Background()
-	config, err := conf.New(configYaml)
+	config, err := conf.New(Args.YamlFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
