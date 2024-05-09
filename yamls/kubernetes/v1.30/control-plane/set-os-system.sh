@@ -3,6 +3,10 @@
 # 禁用交换分区
 swapoff -a
 sed -i /^[^#]*swap*/s/^/\#/g /etc/fstab
+for swap in $(systemctl --type swap --all | grep -E ".swap[[:space:]]+loaded" | awk '{print $1}')
+do
+	systemctl mask "$swap"
+done
 
 # 永久禁用SELinux(必须按顺序执行)
 if [ -f /etc/selinux/config ]; then
