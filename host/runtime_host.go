@@ -105,6 +105,7 @@ func NewFromDSN(URL *url.URL) Runtime {
 	hostname := query.Get("hostname")
 	internal := query.Get("internal")
 	workdir := query.Get("workdir")
+	privateKEY := query.Get("private-key")
 	address := URL.Hostname()
 	port := URL.Port()
 	username := ""
@@ -124,6 +125,7 @@ func NewFromDSN(URL *url.URL) Runtime {
 	delete(values, "hostname")
 	delete(values, "internal")
 	delete(values, "workdir")
+	delete(values, "private-key")
 
 	if workdir == "" {
 		workdir = "/var/ssh-pty/workdir"
@@ -138,6 +140,7 @@ func NewFromDSN(URL *url.URL) Runtime {
 		WithPassword(password),
 		WithNetIF(netIF),
 		WithWorkdir(strings.TrimSuffix(workdir, "/")),
+		WithPrivateKEY(privateKEY),
 		WithValues(values))
 }
 
