@@ -36,9 +36,9 @@ configs:
       docker.io: https://registry.aliyuncs.com
       gcr.io: https://gcr.mirrors.ustc.edu.cn
       quay.io: https://quay.mirrors.ustc.edu.cn
-      # k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
-      k8s.gcr.io: https://registry.aliyuncs.com/google_containers
-      #registry.k8s.io: https://registry.aliyuncs.com/google_containers
+      #k8s.gcr.io: https://registry.aliyuncs.com/google_containers
+      k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
+      registry.k8s.io: https://registry.aliyuncs.com/google_containers
       harbor.local: http://harbor.local
     Auths:
       harbor.local:
