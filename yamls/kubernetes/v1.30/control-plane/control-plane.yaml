@@ -21,6 +21,9 @@ configs:
     NodeCidrMaskSize: "24"
     IPVSExcludeCIDRs: [ "172.16.0.0/24" ]
     PortRange: "0-0"
+    ClusterDNS:
+      - "61.139.2.69"
+      - "211.137.96.205"
     CertificateKey: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
     BootstrapToken: "cb6xll.lo5z8trai8zwzh7t"
     Untainted: "" # "control-plane"

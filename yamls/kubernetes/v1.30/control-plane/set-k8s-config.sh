@@ -46,7 +46,7 @@ apiServer:
     authorization-mode: "Node,RBAC"
     enable-admission-plugins: "AlwaysPullImages,ServiceAccount,NamespaceLifecycle,NodeRestriction,LimitRanger,ResourceQuota,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,PodNodeSelector,PodSecurity"
     profiling: "false"
-    #allow-privileged: "true"
+    allow-privileged: "true"
     request-timeout: "1m0s"
     service-account-lookup: "true"
     enable-aggregator-routing: "true"
@@ -81,7 +81,7 @@ controllerManager:
     cluster-signing-duration: "87600h"
     profiling: "false"
     terminated-pod-gc-threshold: "100"
-    #allocate-node-cidrs: "true"
+    allocate-node-cidrs: "true"
     use-service-account-credentials: "true"
     node-cidr-mask-size: "{{ .Configs.K8s.NodeCidrMaskSize }}"
     feature-gates: "RotateKubeletServerCertificate=true"
@@ -114,13 +114,11 @@ bootstrapTokens:
 - token: "{{ .Configs.K8s.BootstrapToken }}"
   description: "kubeadm bootstrap token"
   ttl: "24h"
-#- token: ""
-#  description: "another bootstrap token"
-#  usages:
-#  - authentication
-#  - signing
-#  groups:
-#  - system:bootstrappers:kubeadm:default-node-token
+  usages:
+  - authentication
+  - signing
+  groups:
+  - system:bootstrappers:kubeadm:default-node-token
 
 localAPIEndpoint:
   advertiseAddress: "0.0.0.0"
@@ -142,8 +140,8 @@ nodeRegistration:
     node-ip: "{{ .Host.Internal }}"
     hostname-override: "{{ .Host.Hostname }}"
 
-#skipPhases:
-#- "addon/kube-proxy"
+skipPhases:
+- "addon/kube-proxy"
 
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kube-proxy-config.v1alpha1/
@@ -231,9 +229,12 @@ evictionSoft:
 evictionSoftGracePeriod:
   memory.available: "2m"
 
-# clusterDNS:
-# - "8.8.8.8"
-# - "114.114.114.114"
+{{- if gt (len range .Configs.K8s.ClusterDNS) 0 }}
+clusterDNS:
+{{- range .Configs.K8s.ClusterDNS }}
+- "{{ . }}"
+{{- end }}
+{{- end }}
 
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta4/

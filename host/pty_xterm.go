@@ -240,6 +240,9 @@ func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) error {
 
 	hostname := xt.xterm.host.Hostname(ctx)
 	return filepath.WalkDir(src, func(p string, d fs.DirEntry, e error) error {
+		if d == nil {
+			return nil
+		}
 		file := filepath.ToSlash(strings.TrimPrefix(p, filepath.Dir(src)))
 		file = path.Join(dst, file)
 		if d.IsDir() {

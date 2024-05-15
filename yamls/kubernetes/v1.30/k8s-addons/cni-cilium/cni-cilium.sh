@@ -8,7 +8,7 @@ fi
 
 
 # see https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-the-cilium-cli
-if [[ -e cilium-linux-${CILIUM_ARCH}.tar.gz || -e cilium-linux-${CILIUM_ARCH}.tar.gz.sha256sum ]]; then
+if [[ ! -e cilium-linux-${CILIUM_ARCH}.tar.gz || ! -e cilium-linux-${CILIUM_ARCH}.tar.gz.sha256sum ]]; then
   echo "下载cilium-cli"
   CILIUM_CLI_VERSION="$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)"
   curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CILIUM_ARCH}.tar.gz{,.sha256sum}
@@ -23,7 +23,7 @@ sudo tar xzvfC cilium-linux-${CILIUM_ARCH}.tar.gz /usr/local/bin
 
 # 下载hubble
 # see https://docs.cilium.io/en/stable/gettingstarted/hubble_setup/
-if [[ -e hubble-linux-${CILIUM_ARCH}.tar.gz || -e hubble-linux-${CILIUM_ARCH}.tar.gz.sha256sum ]]; then
+if [[ ! -e hubble-linux-${CILIUM_ARCH}.tar.gz || ! -e hubble-linux-${CILIUM_ARCH}.tar.gz.sha256sum ]]; then
   echo "# 下载hubble"
   HUBBLE_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/hubble/master/stable.txt)
   curl -L --fail --remote-name-all https://github.com/cilium/hubble/releases/download/${HUBBLE_VERSION}/hubble-linux-${CILIUM_ARCH}.tar.gz{,.sha256sum}
@@ -39,11 +39,16 @@ sudo tar xzvfC hubble-linux-${CILIUM_ARCH}.tar.gz /usr/local/bin
 # see https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
 # see https://docs.cilium.io/en/stable/network/kubernetes/kata/
 # see https://docs.cilium.io/en/stable/network/kubernetes/bandwidth-manager/
+# see https://docs.cilium.io/en/stable/network/concepts/ipam/kubernetes/
 echo "安装cilium"
 cilium install \
   --version 1.15.4 \
+  --set ipam.mode=kubernetes \
+  --set k8s.requireIPv4PodCIDR=true \
   --set containerRuntime.integration=containerd \
   --set bandwidthManager.enabled=true \
+  --set hubble.relay.enabled=true \
+  --set hubble.ui.enabled=true \
   --set hubble.tls.auto.enabled=true \
   --set hubble.tls.auto.method=cronJob \
   --set hubble.tls.auto.certValidityDuration=1095 \
