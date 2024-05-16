@@ -46,6 +46,19 @@ echo 'net.ipv4.conf.all.arp_accept = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.default.arp_accept = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.all.arp_ignore = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.default.arp_ignore = 1' >> /etc/sysctl.conf
+echo 'net.core.rmem_max_default = 65536' >> /etc/sysctl.conf
+echo 'net.core.wmem_max_default = 65536' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_syncookies = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_resue = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_recycle = 0' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_fin_timeout = 30' >> /etc/sysctl.conf
+echo 'net.ipv4.ip_local_port_range = 10000 65000' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_rmem = 4096 87380 67108864' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_wmem = 4096 65536 67108864' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_mtu_probing = 1' >> /etc/sysctl.conf
+echo 'net.core.default_qdisc = cake' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_congestion_control = bbr' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_fastopen = 3' >> /etc/sysctl.conf
 
 # sysctl vm
 echo 'vm.max_map_count = 262144' >> /etc/sysctl.conf
@@ -53,6 +66,7 @@ echo 'vm.swappiness = 0' >> /etc/sysctl.conf
 echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
 
 # sysctl fs
+echo 'fs.file-max = 1024000' >> /etc/sysctl.conf
 echo 'fs.inotify.max_user_instances = 524288' >> /etc/sysctl.conf
 echo 'fs.inotify.max_user_watches = 10240001' >> /etc/sysctl.conf
 echo 'fs.pipe-max-size = 4194304' >> /etc/sysctl.conf
@@ -110,6 +124,19 @@ sed -r -i "s@#{0,}?net.ipv4.conf.all.arp_ignore ?= ??(0|1|2)@net.ipv4.conf.all.a
 sed -r -i "s@#{0,}?net.ipv4.conf.default.arp_ignore ?= ??(0|1|2)@net.ipv4.conf.default.arp_ignore = 1@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?kernel.watchdog_thresh ?= ?([0-9]{1,})@kernel.watchdog_thresh = 5@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?kernel.hung_task_timeout_secs ?= ?([0-9]{1,})@kernel.hung_task_timeout_secs = 5@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?fs.file-max ?= ?([0-9]{1,})@fs.file-max = 1024000@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.rmem_max_default ?= ?([0-9]{1,})@net.core.rmem_max_default = 65536@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.wmem_max_default ?= ?([0-9]{1,})@net.core.wmem_max_default = 65536@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_syncookies ?= ?([0-9]{1,})@net.ipv4.tcp_syncookies = 1@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_tw_resue ?= ?([0-9]{1,})@net.ipv4.tcp_tw_resue = 1@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_fin_timeout ?= ?([0-9]{1,})@net.ipv4.tcp_fin_timeout = 30@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.ip_local_port_range ?= ?([0-9]{1,} [0-9]{1,}){1,}@net.ipv4.ip_local_port_range = 10000 65000@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_rmem ?= ?([0-9]{1,} [0-9]{1,} [0-9]{1,}){1,}@net.ipv4.tcp_rmem = 4096 87380 67108864@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_wmem ?= ?([0-9]{1,} [0-9]{1,} [0-9]{1,}){1,}@net.ipv4.tcp_wmem = 4096 65536 67108864@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_mtu_probing ?= ?([0-9]{1,})@net.ipv4.tcp_mtu_probing = 1@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.default_qdisc ?= ?([0-9,a-Z]{1,})@net.core.default_qdisc = cake@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_congestion_control ?= ?([0-9,a-Z]{1,})@net.ipv4.tcp_congestion_control = bbr@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_fastopen ?= ?([0-9]{1,})@net.ipv4.tcp_fastopen = 3@g" /etc/sysctl.conf
 
 # 临时文件去重/etc/sysctl.conf后覆盖原/etc/sysctl.conf
 tmpfile="$$.tmp"

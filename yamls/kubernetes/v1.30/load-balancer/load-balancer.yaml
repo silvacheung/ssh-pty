@@ -14,10 +14,10 @@ configs:
   Backends:
     - Hostname: "lwy-cn-cd-tpy-std-1721667201"
       Endpoint: "172.16.67.201:6443"
-#    - Hostname: "lwy-cn-cd-tpy-std-1721667202"
-#      Endpoint: "172.16.67.202:6443"
-#    - Hostname: "lwy-cn-cd-tpy-std-1721667203"
-#      Endpoint: "172.16.67.203:6443"
+    - Hostname: "lwy-cn-cd-tpy-std-1721667202"
+      Endpoint: "172.16.67.202:6443"
+    - Hostname: "lwy-cn-cd-tpy-std-1721667203"
+      Endpoint: "172.16.67.203:6443"
 
 scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\load-balancer\set-pre-check.sh

@@ -140,8 +140,8 @@ nodeRegistration:
     node-ip: "{{ .Host.Internal }}"
     hostname-override: "{{ .Host.Hostname }}"
 
-skipPhases:
-- "addon/kube-proxy"
+#skipPhases:
+#- "addon/kube-proxy"
 
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kube-proxy-config.v1alpha1/
@@ -229,7 +229,7 @@ evictionSoft:
 evictionSoftGracePeriod:
   memory.available: "2m"
 
-{{- if gt (len range .Configs.K8s.ClusterDNS) 0 }}
+{{- if gt (len .Configs.K8s.ClusterDNS) 0 }}
 clusterDNS:
 {{- range .Configs.K8s.ClusterDNS }}
 - "{{ . }}"

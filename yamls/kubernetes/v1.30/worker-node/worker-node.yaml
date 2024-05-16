@@ -1,6 +1,6 @@
 hosts:
 #  - enp3s0://root:lwy67201@172.16.67.201:22/?hostname=lwy-cn-cd-tpy-std-1721667201&internal=172.16.67.201&workdir=/root/k8s
-  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/k8s
+#  - enp3s0://root:lwy67202@172.16.67.202:22/?hostname=lwy-cn-cd-tpy-std-1721667202&internal=172.16.67.202&workdir=/root/k8s
   - enp3s0://root:lwy67203@172.16.67.203:22/?hostname=lwy-cn-cd-tpy-std-1721667203&internal=172.16.67.203&workdir=/root/k8s
 
 configs:

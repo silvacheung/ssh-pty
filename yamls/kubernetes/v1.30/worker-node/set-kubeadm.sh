@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-if [ "$(systemctl is-active kubelet)" == "active" ]; then
+if [[ "$(systemctl is-active kubelet)" == "active" ]]; then
   echo "Kubelet运行中,跳过安装kubeadm、kubelet、kubectl"
   exit 0
 fi
@@ -27,11 +27,13 @@ sudo apt install -y apt-transport-https ca-certificates curl gpg
 sudo mkdir -p -m 755 /etc/apt/keyrings
 
 # 下载用于 Kubernetes 软件包仓库的公共签名密钥
-curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/v${DEB_VERSION}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL http://mirrors.ustc.edu.cn//kubernetes/core:/stable:/v${DEB_VERSION}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+#curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/v${DEB_VERSION}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 #curl -fsSL https://pkgs.k8s.io/core:/stable:/v${DEB_VERSION}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 # 添加 Kubernetes apt 仓库
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.aliyun.com/kubernetes-new/core/stable/v${DEB_VERSION}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] http://mirrors.ustc.edu.cn/kubernetes/core:/stable:/v${DEB_VERSION}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+#echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.aliyun.com/kubernetes-new/core/stable/v${DEB_VERSION}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 #echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${DEB_VERSION}/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 # 更新 apt 包索引，安装 kubelet、kubeadm 和 kubectl，并锁定其版本
