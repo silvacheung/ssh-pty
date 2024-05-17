@@ -77,4 +77,4 @@ systemctl daemon-reload
 # 需要单独挂盘得目录
 - `/var/lib/containerd`
 - `/var/lib/etcd`
-- `/var/log/kubernetes`
+- `/var/log`
