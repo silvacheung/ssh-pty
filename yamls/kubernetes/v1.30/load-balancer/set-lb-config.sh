@@ -67,7 +67,7 @@ backend b-kube-api-server
 # haproxy stats dashboard
 #---------------------------------------------------------------------
 frontend stats
-  bind {{ .Configs.Frontend.HaproxyUI.Bind }} #*：8080
+  bind {{ .Configs.Frontend.HaproxyUI.Bind }} #*:8080
   mode http
   stats enable
   stats refresh 10s

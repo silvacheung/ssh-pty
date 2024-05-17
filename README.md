@@ -1,5 +1,7 @@
 # ssh_pty
+
 # [debian mirror](https://www.debian.org/mirror/sponsors)
+
 # 替换镜像源(指定替换)
 ```shell
 cp sources.list sources.list.bak
@@ -65,8 +67,14 @@ rm -rf /opt/cni
 rm -rf /etc/cni
 rm -rf /var/lib/cni
 rm -rf /usr/local/bin/cilium
+rm -rf /var/run/cilium
 rm -rf ${HOME}/.kube
 
 # reload
 systemctl daemon-reload
 ```
+
+# 需要单独挂盘得目录
+- `/var/lib/containerd`
+- `/var/lib/etcd`
+- `/var/log/kubernetes`

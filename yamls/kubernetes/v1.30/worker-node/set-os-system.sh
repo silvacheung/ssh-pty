@@ -25,8 +25,8 @@ echo 'net.bridge.bridge-nf-call-ip6tables = 1' >> /etc/sysctl.conf
 echo 'net.bridge.bridge-nf-call-iptables = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.ip_local_reserved_ports = 30000-32767' >> /etc/sysctl.conf
 echo 'net.core.netdev_max_backlog = 65535' >> /etc/sysctl.conf
-echo 'net.core.rmem_max = 33554432' >> /etc/sysctl.conf
-echo 'net.core.wmem_max = 33554432' >> /etc/sysctl.conf
+echo 'net.core.rmem_max = 67108864' >> /etc/sysctl.conf
+echo 'net.core.wmem_max = 67108864' >> /etc/sysctl.conf
 echo 'net.core.somaxconn = 32768' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_max_syn_backlog = 1048576' >> /etc/sysctl.conf
 echo 'net.ipv4.neigh.default.gc_thresh1 = 512' >> /etc/sysctl.conf
@@ -40,7 +40,7 @@ echo 'net.ipv4.tcp_keepalive_intvl = 30' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_keepalive_probes = 10' >> /etc/sysctl.conf
 echo 'net.ipv4.udp_rmem_min = 131072' >> /etc/sysctl.conf
 echo 'net.ipv4.udp_wmem_min = 131072' >> /etc/sysctl.conf
-echo 'net.ipv4.conf.all.rp_filter = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.conf.all.rp_filter = 0' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.default.rp_filter = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.all.arp_accept = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.default.arp_accept = 1' >> /etc/sysctl.conf
@@ -49,10 +49,10 @@ echo 'net.ipv4.conf.default.arp_ignore = 1' >> /etc/sysctl.conf
 echo 'net.core.rmem_max_default = 65536' >> /etc/sysctl.conf
 echo 'net.core.wmem_max_default = 65536' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_syncookies = 1' >> /etc/sysctl.conf
-echo 'net.ipv4.tcp_tw_resue = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_reuse = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_tw_recycle = 0' >> /etc/sysctl.conf
-echo 'net.ipv4.tcp_fin_timeout = 30' >> /etc/sysctl.conf
-echo 'net.ipv4.ip_local_port_range = 10000 65000' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_fin_timeout = 10' >> /etc/sysctl.conf
+echo 'net.ipv4.ip_local_port_range = 32768 65000' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_rmem = 4096 87380 67108864' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_wmem = 4096 65536 67108864' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_mtu_probing = 1' >> /etc/sysctl.conf
@@ -87,8 +87,8 @@ echo 'net.ipv6.conf.all.forwarding=1' >> /etc/sysctl.conf
 # See https://help.aliyun.com/document_detail/118806.html#uicontrol-e50-ddj-w0y
 # See https://help.aliyun.com/zh/ack/product-overview/before-you-start#13710b880fjly
 sed -r -i "s@#{0,}?net.ipv4.tcp_tw_recycle ?= ?(0|1|2)@net.ipv4.tcp_tw_recycle = 0@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.ipv4.tcp_tw_reuse ?= ?(0|1)@net.ipv4.tcp_tw_reuse = 0@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.ipv4.conf.all.rp_filter ?= ?(0|1|2)@net.ipv4.conf.all.rp_filter = 1@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_tw_reuse ?= ?(0|1)@net.ipv4.tcp_tw_reuse = 1@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.conf.all.rp_filter ?= ?(0|1|2)@net.ipv4.conf.all.rp_filter = 0@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.conf.default.rp_filter ?= ?(0|1|2)@net.ipv4.conf.default.rp_filter = 1@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.ip_forward ?= ?(0|1)@net.ipv4.ip_forward = 1@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.bridge.bridge-nf-call-arptables ?= ?(0|1)@net.bridge.bridge-nf-call-arptables = 1@g" /etc/sysctl.conf
@@ -103,8 +103,8 @@ sed -r -i "s@#{0,}?vm.overcommit_memory ?= ?(0|1|2)@vm.overcommit_memory = 0@g" 
 sed -r -i "s@#{0,}?fs.inotify.max_user_watches ?= ?([0-9]{1,})@fs.inotify.max_user_watches = 524288@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?fs.pipe-max-size ?= ?([0-9]{1,})@fs.pipe-max-size = 4194304@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.core.netdev_max_backlog ?= ?([0-9]{1,})@net.core.netdev_max_backlog = 65535@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.core.rmem_max ?= ?([0-9]{1,})@net.core.rmem_max = 33554432@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.core.wmem_max ?= ?([0-9]{1,})@net.core.wmem_max = 33554432@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.rmem_max ?= ?([0-9]{1,})@net.core.rmem_max = 67108864@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.wmem_max ?= ?([0-9]{1,})@net.core.wmem_max = 67108864@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_max_syn_backlog ?= ?([0-9]{1,})@net.ipv4.tcp_max_syn_backlog = 1048576@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.neigh.default.gc_thresh1 ?= ?([0-9]{1,})@net.ipv4.neigh.default.gc_thresh1 = 512@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.neigh.default.gc_thresh2 ?= ?([0-9]{1,})@net.ipv4.neigh.default.gc_thresh2 = 2048@g" /etc/sysctl.conf
@@ -129,8 +129,8 @@ sed -r -i "s@#{0,}?net.core.rmem_max_default ?= ?([0-9]{1,})@net.core.rmem_max_d
 sed -r -i "s@#{0,}?net.core.wmem_max_default ?= ?([0-9]{1,})@net.core.wmem_max_default = 65536@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_syncookies ?= ?([0-9]{1,})@net.ipv4.tcp_syncookies = 1@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_tw_resue ?= ?([0-9]{1,})@net.ipv4.tcp_tw_resue = 1@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.ipv4.tcp_fin_timeout ?= ?([0-9]{1,})@net.ipv4.tcp_fin_timeout = 30@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.ipv4.ip_local_port_range ?= ?([0-9]{1,} [0-9]{1,}){1,}@net.ipv4.ip_local_port_range = 10000 65000@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_fin_timeout ?= ?([0-9]{1,})@net.ipv4.tcp_fin_timeout = 10@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.ip_local_port_range ?= ?([0-9]{1,} [0-9]{1,}){1,}@net.ipv4.ip_local_port_range = 32768 65000@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_rmem ?= ?([0-9]{1,} [0-9]{1,} [0-9]{1,}){1,}@net.ipv4.tcp_rmem = 4096 87380 67108864@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_wmem ?= ?([0-9]{1,} [0-9]{1,} [0-9]{1,}){1,}@net.ipv4.tcp_wmem = 4096 65536 67108864@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_mtu_probing ?= ?([0-9]{1,})@net.ipv4.tcp_mtu_probing = 1@g" /etc/sysctl.conf
