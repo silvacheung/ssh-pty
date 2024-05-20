@@ -23,5 +23,5 @@ scripts:
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\load-balancer\set-pre-check.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\load-balancer\set-hostname.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\load-balancer\set-resolv-conf.sh
-  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\load-balancer\set-lb-config.sh
   - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\load-balancer\set-lb-install.sh
+  - D:\workspace\ssh-pty\yamls\kubernetes\v1.30\load-balancer\set-lb-config.sh

@@ -23,11 +23,13 @@ kubeadm reset -f --cri-socket unix:///var/run/containerd/containerd.sock
 
 # kubelet kubeadm kubectl
 sudo apt-mark unhold kubelet kubeadm kubectl
-sudo apt autoremove kubelet kubeadm kubectl -y
-sudo apt autoremove haproxy keepalived -y
+sudo apt autoremove --purge kubelet kubeadm kubectl -y && apt autoremove -y && apt autoclean -y
 
 # containerd
 systemctl disable containerd && systemctl stop containerd
+
+# load-balancer
+apt autoremove --purge haproxy keepalived -y && apt autoremove -y && apt autoclean -y
 
 # net
 iptables -F
@@ -69,6 +71,7 @@ rm -rf /var/lib/cni
 rm -rf /usr/local/bin/cilium
 rm -rf /var/run/cilium
 rm -rf ${HOME}/.kube
+rm -rf /var/lib/haproxy
 
 # reload
 systemctl daemon-reload

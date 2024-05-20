@@ -154,3 +154,9 @@ fi
 EOF
 
 chmod +x /etc/keepalived/check-api-server.sh
+
+if [[ "$(systemctl is-active haproxy)" == "active" && "$(systemctl is-enabled haproxy)" == "enabled" && "$(systemctl is-active keepalived)" == "active" && "$(systemctl is-enabled keepalived)" == "enabled" ]]; then
+	 systemctl daemon-reload
+   systemctl restart haproxy
+   systemctl restart keepalived
+fi

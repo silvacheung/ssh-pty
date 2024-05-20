@@ -2,7 +2,7 @@
 
 # control plane
 chmod 700 -f /var/lib/etcd
-chown etcd:etcd -f /var/lib/etcd
+chown root:root -f /var/lib/etcd
 
 chmod 644 -f /etc/kubernetes
 chown root:root -f /etc/kubernetes
