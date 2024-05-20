@@ -37,7 +37,7 @@ fi
 # see https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
 # see https://docs.cilium.io/en/stable/network/kubernetes/kata/
 # see https://docs.cilium.io/en/stable/network/kubernetes/bandwidth-manager/
-if [ $(cilium version | grep 'cilium image (running)' | awk '{print $4,$12,$13}') != "unknown. not found" ]; then
+if [ "$(cilium version | grep 'cilium image (running)' | awk '{print $4,$12,$13}')" != "unknown. not found" ]; then
   echo "已经安装cilium,跳过安装"
   exit 0
 fi
