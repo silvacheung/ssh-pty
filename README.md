@@ -71,6 +71,8 @@ rm -rf /var/lib/cni
 rm -rf /usr/local/bin/cilium
 rm -rf /var/run/cilium
 rm -rf ${HOME}/.kube
+rm -rf /etc/haproxy
+rm -rf /etc/keepalived
 rm -rf /var/lib/haproxy
 
 # reload

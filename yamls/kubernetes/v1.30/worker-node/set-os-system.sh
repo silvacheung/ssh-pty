@@ -134,8 +134,8 @@ sed -r -i "s@#{0,}?net.ipv4.ip_local_port_range ?= ?([0-9]{1,} [0-9]{1,}){1,}@ne
 sed -r -i "s@#{0,}?net.ipv4.tcp_rmem ?= ?([0-9]{1,} [0-9]{1,} [0-9]{1,}){1,}@net.ipv4.tcp_rmem = 4096 87380 67108864@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_wmem ?= ?([0-9]{1,} [0-9]{1,} [0-9]{1,}){1,}@net.ipv4.tcp_wmem = 4096 65536 67108864@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_mtu_probing ?= ?([0-9]{1,})@net.ipv4.tcp_mtu_probing = 1@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.core.default_qdisc ?= ?([0-9,a-Z]{1,})@net.core.default_qdisc = cake@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.ipv4.tcp_congestion_control ?= ?([0-9,a-Z]{1,})@net.ipv4.tcp_congestion_control = bbr@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.default_qdisc ?= ?([0-9,a-z,A-Z]{1,})@net.core.default_qdisc = cake@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.ipv4.tcp_congestion_control ?= ?([0-9,a-z,A-Z]{1,})@net.ipv4.tcp_congestion_control = bbr@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_fastopen ?= ?([0-9]{1,})@net.ipv4.tcp_fastopen = 3@g" /etc/sysctl.conf
 
 # 临时文件去重/etc/sysctl.conf后覆盖原/etc/sysctl.conf
