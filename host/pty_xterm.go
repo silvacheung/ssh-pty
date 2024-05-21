@@ -121,6 +121,9 @@ func (xt *XtermShell) Stderr(fn func(ctx context.Context, stdin io.Writer, buf [
 }
 
 func (xt *XtermShell) Exited(fn func(ctx context.Context, code int, out []byte) error) error {
+	if xt.xterm.err != nil {
+		return xt.xterm.err
+	}
 	if xt.exited = fn; xt.exited == nil {
 		xt.exited = func(ctx context.Context, code int, out []byte) error { return nil }
 	}
