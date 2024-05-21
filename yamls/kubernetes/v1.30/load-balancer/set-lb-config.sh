@@ -155,8 +155,15 @@ EOF
 
 chmod +x /etc/keepalived/check-api-server.sh
 
+# haproxy、keepalived重启
+systemctl daemon-reload
+systemctl restart haproxy
+systemctl restart keepalived
+
+# 最后检查是否安装成功
 if [[ "$(systemctl is-active haproxy)" == "active" && "$(systemctl is-enabled haproxy)" == "enabled" && "$(systemctl is-active keepalived)" == "active" && "$(systemctl is-enabled keepalived)" == "enabled" ]]; then
-	 systemctl daemon-reload
-   systemctl restart haproxy
-   systemctl restart keepalived
+	echo "LB Is Running"
+else
+	echo "LB Not Running"
+	exit 1
 fi
