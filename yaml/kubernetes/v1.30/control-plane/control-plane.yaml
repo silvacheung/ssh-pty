@@ -1,0 +1,86 @@
+hosts:
+  - { hostname: lwy-cn-cd-tpy-std-1721667201, address: 172.16.67.201, internal: 172.16.67.201, port: 22, username: root, password: lwy67201, workdir: /root/k8s, private_key: "" }
+  - { hostname: lwy-cn-cd-tpy-std-1721667202, address: 172.16.67.202, internal: 172.16.67.202, port: 22, username: root, password: lwy67202, workdir: /root/k8s, private_key: "" }
+#  - { hostname: lwy-cn-cd-tpy-std-1721667203, address: 172.16.67.203, internal: 172.16.67.203, port: 22, username: root, password: lwy67203, workdir: /root/k8s, private_key: "" }
+
+config:
+  k8s:
+    version: "1.29.4"
+    cluster_name: "alpha"
+    control_plane_endpoint:
+      domain: "k8s.api-server.lb"
+      address: "172.16.67.204"
+      port: "9443"
+    image_repository: "registry.aliyuncs.com/google_containers"
+    # 一下三个决定了集群规模
+    # 集群最大节点数: 2^(node_cidr_mask_size-pod_subnet(cidr))
+    # 每个节点最大ip数: 2^(32-node_cidr_mask_size)
+    # 例：2^(24-12) = 4096(节点数) 2^(32-24) = 256(ip数)
+    service_subnet: "10.16.0.0/12"
+    pod_subnet: "10.128.0.0/12"
+    node_cidr_mask_size: "24"
+    ipvs_exclude_cidr: [ "172.16.0.0/24" ]
+    port_range: "0-0"
+    cluster_dns:
+      - "61.139.2.69"
+      - "211.137.96.205"
+    certificate_key: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
+    bootstrap_token: "cb6xll.lo5z8trai8zwzh7t"
+    untainted: "control-plane" # "control-plane"
+
+  containerd:
+    arch: "amd64"
+    version: "1.7.15"
+    runc_version: "1.1.12"
+    cni_version: "1.4.1"
+    cri_ctl_version: "1.30.0"
+    sand_box_image: "registry.aliyuncs.com/google_containers/pause:3.9"
+    mirrors:
+      docker.io: https://registry.aliyuncs.com
+      gcr.io: https://gcr.mirrors.ustc.edu.cn
+      quay.io: https://quay.mirrors.ustc.edu.cn
+      #k8s.gcr.io: https://registry.aliyuncs.com/google_containers
+      k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
+      registry.k8s.io: https://registry.aliyuncs.com/google_containers
+      harbor.local: http://harbor.local
+    auths:
+      harbor.local:
+        username: "username"
+        password: "password"
+        ca_file: ""
+        cert_file: ""
+        key_file: ""
+        skip_tls_verify: true
+
+sftp:
+  lwy-cn-cd-tpy-std-1721667201:
+    - F:\cri\
+    - F:\cni\
+  lwy-cn-cd-tpy-std-1721667202:
+    - F:\cri\
+    - F:\cni\
+  lwy-cn-cd-tpy-std-1721667203:
+    - F:\cri\
+    - F:\cni\
+
+await:
+  lwy-cn-cd-tpy-std-1721667202:
+    - "lwy-cn-cd-tpy-std-1721667201"
+  lwy-cn-cd-tpy-std-1721667203:
+    - "lwy-cn-cd-tpy-std-1721667201"
+
+script:
+  - yaml/kubernetes/v1.30/control-plane/set-resolv-conf.sh
+  - yaml/kubernetes/v1.30/control-plane/set-apt.sh
+  - yaml/kubernetes/v1.30/control-plane/set-pre-check.sh
+  - yaml/kubernetes/v1.30/control-plane/set-hostname.sh
+  - yaml/kubernetes/v1.30/control-plane/set-hosts.sh
+  - yaml/kubernetes/v1.30/control-plane/set-os-system.sh
+  - yaml/kubernetes/v1.30/control-plane/set-ntp-server.sh
+  - yaml/kubernetes/v1.30/control-plane/set-containerd.sh
+  - yaml/kubernetes/v1.30/control-plane/set-kubeadm.sh
+  - yaml/kubernetes/v1.30/control-plane/set-k8s-config.sh
+  - yaml/kubernetes/v1.30/control-plane/set-k8s-audit.sh
+  - yaml/kubernetes/v1.30/control-plane/set-k8s-boot.sh
+  - yaml/kubernetes/v1.30/control-plane/set-k8s-security.sh
+  - yaml/kubernetes/v1.30/control-plane/set-cni-cilium.sh

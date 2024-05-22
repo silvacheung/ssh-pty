@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"github.com/silvacheung/ssh-pty/conf"
 	"github.com/silvacheung/ssh-pty/host"
-	"io"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 )
@@ -21,107 +18,82 @@ func NewExecutor(config *conf.Config, runtime Runtime) *Executor {
 	return &Executor{config: config, runtime: runtime}
 }
 
-func (exec *Executor) Executing(ctx context.Context) error {
-	// 配置文件数据
-	cfgHosts := exec.config.GetStringSlice("hosts")
-	cfgScripts := exec.config.GetStringSlice("scripts")
-	cfgSpecial := exec.config.GetStringMapStringSlice("special")
-	cfgSftp := exec.config.GetStringMapStringSlice("sftp")
-	cfgAwaits := exec.config.GetStringMapStringSlice("awaits")
+func (exec *Executor) Executing(ctx context.Context) (err error) {
+	setHosts := exec.config.IsSet("hosts")
+	setScript := exec.config.IsSet("script")
+	setSftp := exec.config.IsSet("sftp")
+	if !setHosts || (!setScript && !setSftp) {
+		return fmt.Errorf("配置文件错误: 未设置执行主机、执行脚本/传输文件！")
+	}
 
 	// 读取执行主机
-	hosts := make([]host.Runtime, 0, len(cfgHosts))
-	for _, dsn := range cfgHosts {
-		fmt.Printf("读取执行主机: %s\n", dsn)
-		u, e := url.Parse(dsn)
-		if e != nil {
-			return e
+	hosts := make([]host.Runtime, 0, 100)
+	for i := 0; ; i++ {
+		key := fmt.Sprintf("hosts.%d", i)
+		if !exec.config.InConfig(key) {
+			break
 		}
 
-		h := host.NewFromDSN(u)
-		hostname := h.Hostname(ctx)
-		if !host.IsValidHostname(hostname) {
-			return fmt.Errorf("hostname invalid: %s", hostname)
+		h := host.New(
+			host.WithHostname(exec.config.GetString(key+".hostname")),
+			host.WithAddress(exec.config.GetString(key+".address")),
+			host.WithInternal(exec.config.GetString(key+".internal")),
+			host.WithPort(exec.config.GetString(key+".port")),
+			host.WithUsername(exec.config.GetString(key+".username")),
+			host.WithPassword(exec.config.GetString(key+".password")),
+			host.WithPrivateKEY(exec.config.GetString(key+".privateKey")),
+			host.WithWorkdir(exec.config.GetString(key+".workdir")),
+		)
+
+		fmt.Printf("读取执行主机:%s\n", h.String(ctx))
+		if !host.IsValidHostname(h.Hostname(ctx)) {
+			return fmt.Errorf("hostname invalid: %s", h.String(ctx))
 		}
 
 		hosts = append(hosts, h)
 	}
 
 	// 读取执行脚本
-	scriptFiles := make(map[string][]string, len(cfgScripts)+len(cfgSpecial))
-	scriptTemps := make(map[string]map[string]string, len(cfgScripts)+len(cfgSpecial))
+	scripts := exec.config.GetStringSlice("script")
+	scriptFiles := make(map[string][]string, len(scripts))
 	for _, h := range hosts {
 		hostname := h.Hostname(ctx)
-		for _, file := range cfgScripts {
-			fmt.Printf("读取执行脚本[%s]: %s\n", hostname, file)
-			f, e := os.Open(file)
-			if e != nil {
-				return e
-			}
-			tpl, e := io.ReadAll(f)
-			if e != nil {
-				return e
-			}
+		for _, file := range scripts {
+			fmt.Printf("读取执行脚本[%s]:%s\n", hostname, file)
 			scriptFiles[hostname] = append(scriptFiles[hostname], file)
-
-			templates, ok := scriptTemps[hostname]
-			if !ok {
-				templates = make(map[string]string, len(cfgScripts))
-			}
-			templates[file] = string(tpl)
-			scriptTemps[hostname] = templates
-		}
-	}
-
-	// 读取特殊脚本
-	for hostname, files := range cfgSpecial {
-		for _, file := range files {
-			fmt.Printf("读取特殊脚本[%s]: %s\n", hostname, file)
-			f, e := os.Open(file)
-			if e != nil {
-				return e
-			}
-			tpl, e := io.ReadAll(f)
-			if e != nil {
-				return e
-			}
-			scriptFiles[hostname] = append(scriptFiles[hostname], file)
-
-			templates, ok := scriptTemps[hostname]
-			if !ok {
-				templates = make(map[string]string, len(cfgScripts))
-			}
-			templates[file] = string(tpl)
-			scriptTemps[hostname] = templates
 		}
 	}
 
 	// 执行单元
+	sftp := exec.config.GetStringMapStringSlice("sftp")
 	units := make(map[string]*Unit, len(hosts))
 	for i := range hosts {
+		key := fmt.Sprintf("hosts.%d", i)
+		config := exec.config.Clone()
+		config.Set("host", exec.config.Get(key))
 		this := hosts[i]
 		hostname := this.Hostname(ctx)
 		units[hostname] = &Unit{
 			wg:         new(sync.WaitGroup),
-			config:     exec.config,
+			config:     config,
 			runtime:    exec.runtime,
 			hosts:      hosts,
 			this:       this,
-			sftpFiles:  cfgSftp[hostname],
+			sftpFiles:  sftp[hostname],
 			shellFiles: scriptFiles[hostname],
-			shellTemps: scriptTemps[hostname],
 			waits:      make([]*Unit, 0, 2),
 		}
 	}
 
 	// 依赖执行
+	awaits := exec.config.GetStringMapStringSlice("await")
 	errC := make(chan error, len(units))
 	for hostname := range units {
 		unit := units[hostname]
-		awaits := cfgAwaits[hostname]
-		for _, awaitHostname := range awaits {
-			if await := units[awaitHostname]; await != nil {
-				unit.waits = append(unit.waits, await)
+		awaitHosts := awaits[hostname]
+		for _, awaitHostname := range awaitHosts {
+			if awaitUnit := units[awaitHostname]; awaitUnit != nil {
+				unit.waits = append(unit.waits, awaitUnit)
 			}
 		}
 		unit.ExecGo(ctx, errC)
@@ -134,11 +106,12 @@ func (exec *Executor) Executing(ctx context.Context) error {
 
 	// 处理错误
 	close(errC)
-	for err := range errC {
+	for err = range errC {
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -150,20 +123,19 @@ type Unit struct {
 	this       host.Runtime
 	sftpFiles  []string
 	shellFiles []string
-	shellTemps map[string]string
 	waits      []*Unit
+	err        error
 }
 
 func (u *Unit) ExecGo(ctx context.Context, errC chan<- error) {
-	ech := make(chan error, 4)
 	u.wg.Add(1)
 	go func() {
 		defer u.wg.Done()
-		ech <- <-u.sftp(ctx)
-		ech <- <-u.building(ctx)
-		ech <- <-u.waitingUnits(ctx)
-		ech <- <-u.executing(ctx)
-		errC <- <-u.handleErrorC(ech)
+		u.sftp(ctx)
+		u.building(ctx)
+		u.waitingUnits(ctx)
+		u.executing(ctx)
+		errC <- u.err
 	}()
 }
 
@@ -171,28 +143,25 @@ func (u *Unit) Await() {
 	u.wg.Wait()
 }
 
-func (u *Unit) sftp(ctx context.Context) <-chan error {
-	errC := make(chan error, len(u.sftpFiles))
-
+func (u *Unit) sftp(ctx context.Context) {
+	if u.err != nil || len(u.sftpFiles) == 0 {
+		return
+	}
 	workdir := u.this.Workdir(ctx)
 	sftp := u.this.PTY(ctx, "xterm").Sftp(ctx)
 	for _, f := range u.sftpFiles {
-		if err := sftp.Copy(ctx, f, workdir); err != nil {
-			errC <- err
+		if u.err = sftp.Copy(ctx, f, workdir); u.err != nil {
+			break
 		}
 	}
-
-	return u.handleErrorC(errC)
 }
 
-func (u *Unit) building(ctx context.Context) <-chan error {
+func (u *Unit) building(ctx context.Context) {
+	if u.err != nil || len(u.shellFiles) == 0 {
+		return
+	}
+
 	errC := make(chan error, len(u.shellFiles))
-
-	metadata := make(Metadata, 3)
-	metadata.SetConfigs(ctx, u.config)
-	metadata.SetThisHost(ctx, u.this)
-	metadata.SetAllHosts(ctx, u.hosts...)
-
 	parallelC := make(chan struct{}, 5)
 	wg := new(sync.WaitGroup)
 	for _, file := range u.shellFiles {
@@ -203,11 +172,9 @@ func (u *Unit) building(ctx context.Context) <-chan error {
 				<-parallelC
 				wg.Done()
 			}()
-			u.runtime.Builder(ctx, "go-tmpl").
-				Filename(file).
-				Template(u.shellTemps[file]).
-				Metadata(metadata).
-				Building(ctx, u.this, func(ctx context.Context, err error) {
+			u.runtime.Builder(ctx, "go-template").
+				File(file).Config(u.config).
+				Build(ctx, u.this, func(ctx context.Context, err error) {
 					errC <- err
 				})
 		}(file)
@@ -215,33 +182,38 @@ func (u *Unit) building(ctx context.Context) <-chan error {
 
 	wg.Wait()
 	close(parallelC)
-	return u.handleErrorC(errC)
+	u.err = <-u.handleErrorC(errC)
 }
 
-func (u *Unit) executing(ctx context.Context) <-chan error {
-	errC := make(chan error, len(u.shellFiles))
+func (u *Unit) executing(ctx context.Context) {
+	if u.err != nil || len(u.shellFiles) == 0 {
+		return
+	}
+
 	for _, file := range u.shellFiles {
-		if err := u.runtime.Runner(ctx, "ssh-pty").Run(ctx, u.this, file); err != nil {
-			errC <- err
+		if u.err = u.runtime.Runner(ctx, "ssh-pty").Run(ctx, u.this, file); u.err != nil {
 			break
 		}
 	}
-	return u.handleErrorC(errC)
 }
 
-func (u *Unit) waitingUnits(ctx context.Context) <-chan error {
-	errC := make(chan error, len(u.waits))
-	if len(u.waits) > 0 {
-		for _, unit := range u.waits {
-			if err := ctx.Err(); err != nil {
-				errC <- err
-				break
-			}
-			fmt.Printf("等待依赖执行结束[%s]: %s\n", u.this.Hostname(ctx), unit.this.Hostname(ctx))
-			unit.wg.Wait()
+func (u *Unit) waitingUnits(ctx context.Context) {
+	if u.err != nil || len(u.waits) == 0 {
+		return
+	}
+
+	for _, unit := range u.waits {
+		if u.err = ctx.Err(); u.err != nil {
+			break
+		}
+		hostname := u.this.Hostname(ctx)
+		waitHostname := unit.this.Hostname(ctx)
+		fmt.Printf("等待依赖执行结束[%s]:%s\n", hostname, waitHostname)
+		if unit.Await(); unit.err != nil {
+			u.err = fmt.Errorf("依赖执行错误，取消执行[%s]:%s", hostname, waitHostname)
+			break
 		}
 	}
-	return u.handleErrorC(errC)
 }
 
 func (u *Unit) handleErrorC(errC chan error) <-chan error {

@@ -17,13 +17,13 @@ func NewSSHPty(ctx context.Context) Runner {
 	return &SSHPty{ctx: ctx}
 }
 
-func (r *SSHPty) Run(ctx context.Context, h host.Runtime, filename string) error {
+func (r *SSHPty) Run(ctx context.Context, h host.Runtime, file string) error {
 	// 获取指定文件
 	workdir := h.Workdir(ctx)
-	_, file := filepath.Split(filename)
+	_, filename := filepath.Split(file)
 
 	// 生成执行命令
-	cmd := fmt.Sprintf("chmod +x %s/%s && %s/%s", workdir, file, workdir, file)
+	cmd := fmt.Sprintf("chmod +x %s/%s && %s/%s", workdir, filename, workdir, filename)
 
 	// 远程执行命令
 	hostname := h.Hostname(ctx)

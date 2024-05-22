@@ -1,0 +1,24 @@
+hosts:
+  - { hostname: lwy-cn-cd-tpy-std-1721667201, address: 172.16.67.201, internal: 172.16.67.201, port: 22, username: root, password: lwy67201, workdir: /root/k8s, private_key: "" }
+  - { hostname: lwy-cn-cd-tpy-std-1721667202, address: 172.16.67.202, internal: 172.16.67.202, port: 22, username: root, password: lwy67202, workdir: /root/k8s, private_key: "" }
+  - { hostname: lwy-cn-cd-tpy-std-1721667203, address: 172.16.67.203, internal: 172.16.67.203, port: 22, username: root, password: lwy67203, workdir: /root/k8s, private_key: "" }
+
+config:
+  virtual_ip: "172.16.67.204/24"
+  frontend:
+    haproxy_ui:
+      bind: "*:8080"
+      auth: "admin:123456"
+    api_server:
+      bind: "*:9443"
+  backends:
+    - { hostname: "lwy-cn-cd-tpy-std-1721667201", endpoint: "172.16.67.201:6443"}
+    - { hostname: "lwy-cn-cd-tpy-std-1721667202", endpoint: "172.16.67.202:6443"}
+    - { hostname: "lwy-cn-cd-tpy-std-1721667203", endpoint: "172.16.67.203:6443"}
+
+script:
+  - yaml/kubernetes/v1.30/load-balancer/set-pre-check.sh
+  - yaml/kubernetes/v1.30/load-balancer/set-hostname.sh
+  - yaml/kubernetes/v1.30/load-balancer/set-resolv-conf.sh
+  - yaml/kubernetes/v1.30/load-balancer/set-lb-install.sh
+  - yaml/kubernetes/v1.30/load-balancer/set-lb-config.sh

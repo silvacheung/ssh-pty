@@ -1,118 +1,57 @@
+# 配置文件的'键'必须使用全小写或者小写的蛇形分隔
 # 定义需要执行的脚本的所有主机
-# 格式: <network interface>://<username>:<password>@<address>:<port>/?&workdir=<workdir>&hostname=<hostname>&internal=<internal address>&privateKey=<ssh private key file>
-# 例子: eth0://root:123456@172.16.0.1:22/?workdir=/var/ssh-pty/script&hostname=my-pc&internal=127.0.0.1&privateKey=/a/b/c/private.key
+# 'private_key'字段的值是一个pem私钥，需要用标准base64编码，其pem原始数据为
+# -----BEGIN RSA PRIVATE KEY-----
+# MIIEowIBAAKCAQEArhp7SqFnXVZAgWREL9Ogs+miy4IU/m0vmdkoK6M97G9NX/Pj
+# ......
+# QYa37FK0p8NcDeUuF86zXBVutwS5nJLchHhKfd590ks57OROtm29
+# -----END RSA PRIVATE KEY-----
 # 此主机信息可以从模板文件中取值
-#
-#   {{- range .Hosts}}
-#   {{ .NetIF }}
-#   {{ .Hostname }}
-#   {{ .Username }}
-#   {{ .Password }}
-#   {{ .Address }}
-#   {{ .Port }}
-#   {{ .Internal }}
-#   {{ .PrivateKey }}
-#   {{ .Workdir }}
-#   {{-  end }}
-#
-# 在模板中也可以获取当前执行脚本的主机
-#
-#   {{ .Host.NetIF }}
-#   {{ .Host.Hostname }}
-#   {{ .Host.Username }}
-#   {{ .Host.Password }}
-#   {{ .Host.Address }}
-#   {{ .Host.Port }}
-#   {{ .Host.Internal }}
-#   {{ .Host.PrivateKey }}
-#   {{ .Host.Workdir }}
-#
+# {{ get "hosts" }}: 取值所有的主机
+# {{ get "host" }}: 取值当前主机
+# {{ get "hosts.0" }}: 取值第一个主机
 hosts:
-  - eth0://root:123456@172.16.0.1:22/?hostname=pc-1721601&internal=127.0.0.1&workdir=/var/ssh-pty
-  - eth0://root:123456@172.16.0.2:22/?hostname=pc-1721602&internal=127.0.0.1&workdir=/var/ssh-pty
-  - eth0://root:123456@172.16.0.3:22/?hostname=pc-1721603&internal=127.0.0.1&workdir=/var/ssh-pty
+  - { hostname: std-17216671, address: 172.16.67.201, internal: 172.16.67.1, port: 22, username: root, password: std671, workdir: /root/k8s, private_key: "" }
+  - { hostname: std-17216672, address: 172.16.67.202, internal: 172.16.67.2, port: 22, username: root, password: std672, workdir: /root/k8s, private_key: "" }
+  - { hostname: std-17216673, address: 172.16.67.203, internal: 172.16.67.3, port: 22, username: root, password: std673, workdir: /root/k8s, private_key: "" }
 
 # 配置脚本模板中的数据
-# 在模板中把这个configs当作一个map[string]any
-#
-# {{ .Configs.K8s.Version }}
-# {{ .Configs.Containerd.Version }}
-#
-configs:
-  K8s:
-    Version: "1.29.4"
-    ClusterName: "alpha"
-    ControlPlaneEndpoint:
-      Domain: "k8s.api-server.lb"
-      Address: "172.16.67.204"
-      Port: "9443"
-    ImageRepository: "registry.aliyuncs.com/google_containers"
-    # 一下三个决定了集群规模
-    # 集群最大节点数: 2^(NodeCidrMaskSize-PodSubnet(CIDR))
-    # 每个节点最大IP数: 2^(32-NodeCidrMaskSize)
-    # 例：2^(24-12) = 4096(节点数) 2^(32-24) = 256(IP数)
-    ServiceSubnet: "10.16.0.0/12"
-    PodSubnet: "10.128.0.0/12"
-    NodeCidrMaskSize: "24"
-    IPVSExcludeCIDRs: [ "172.16.0.0/24" ]
-    PortRange: "0-0"
-    CertificateKey: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
-    BootstrapToken: "cb6xll.lo5z8trai8zwzh7t"
-    Untainted: "" # "control-plane"
-
-  Containerd:
-    Arch: "amd64"
-    Version: "1.7.15"
-    RuncVersion: "1.1.12"
-    CniVersion: "1.4.1"
-    CriCtlVersion: "1.30.0"
-    SandBoxImage: "registry.aliyuncs.com/google_containers/pause:3.9"
-    Mirrors:
-      docker.io: https://registry.aliyuncs.com
-      gcr.io: https://gcr.mirrors.ustc.edu.cn
-      quay.io: https://quay.mirrors.ustc.edu.cn
-      # k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
-      k8s.gcr.io: https://registry.aliyuncs.com/google_containers
-      #registry.k8s.io: https://registry.aliyuncs.com/google_containers
-      harbor.local: http://harbor.local
-    Auths:
-      harbor.local:
-        Username: "username"
-        Password: "password"
-        CAFile: ""
-        CertFile: ""
-        KeyFile: ""
-        SkipTLSVerify: true
+# 可以从模板文件中取值
+# {{ get "config.key" }}
+# {{ get "config.array.0" }}
+# {{ get "config.obj.field" }}
+config:
+  key: value
+  array:
+    - "0000"
+    - "1111"
+  obj:
+    field: value
 
 # 定义主机上执行脚本之前需要等待执行完毕的其他主机
-awaits:
-  lwy-cn-cd-tpy-std-1721667202:
-    - "lwy-cn-cd-tpy-std-1721667201"
-  lwy-cn-cd-tpy-std-1721667203:
-    - "lwy-cn-cd-tpy-std-1721667201"
+await:
+  std-17216672:
+    - "std-17216671"
+  std-17216673:
+    - "std-17216671"
 
 # 上面定义的主机需要执行的脚本模板
-# 这些脚本模板将使用上面的configs和Hosts数据进行填充
+# 这些脚本模板将使用上面的config和hosts数据进行填充
 scripts:
   - /ssh-pty/conf/xxx.sh
   - /ssh-pty/conf/xxx.sh
   - /ssh-pty/conf/xxx.sh
 
-# 这里是特定的主机需要单独执行的脚本模板
-special:
-  pc-1721601:
-    - /ssh-pty/conf/xxx.sh
-
 # 在执行脚本之前需要传输到目标主机上的本机文件
 # 如果是以`/`结尾则把目录下的所有文件传输到主机上
 # 如果以文件或者目录名结尾则会在目标主机上创建这个文件或目录并将文件全部传输到主机
 sftp:
-  lwy-cn-cd-tpy-std-1721667201:
-    - F:\cri\
-    - F:\cni\
-  lwy-cn-cd-tpy-std-1721667202:
-    - F:\cri\
-    - F:\cni\
-  lwy-cn-cd-tpy-std-1721667203:
-    - F:\cri\
-    - F:\cni\
+  std-17216671:
+    - /ssh-pty/cri/
+    - /ssh-pty/cni/
+  std-17216672:
+    - /ssh-pty/cri/
+    - /ssh-pty/cni/
+  std-17216673:
+    - /ssh-pty/cri/
+    - /ssh-pty/cni/

@@ -19,12 +19,10 @@ type Runtime interface {
 	Password(context.Context) string
 	// PrivateKEY 获取本主机SSH私钥
 	PrivateKEY(context.Context) string
-	// NetIF 获取本主机网络接口
-	NetIF(context.Context) string
 	// Workdir 返回工作目录
 	Workdir(context.Context) string
-	// Values 获取所有的Values
-	Values(context.Context) map[string]string
+	// String 返回主机格式化
+	String(ctx context.Context) string
 	// PTY 获取本主机的伪终端
 	PTY(context.Context, string) Pty
 }

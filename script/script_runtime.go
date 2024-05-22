@@ -23,7 +23,7 @@ func GetRunner(name string) func(ctx context.Context) Runner {
 }
 
 func init() {
-	SetBuilder("go-tmpl", NewTemplate)
+	SetBuilder("go-template", NewTemplate)
 	SetRunner("ssh-pty", NewSSHPty)
 }
 

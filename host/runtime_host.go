@@ -2,8 +2,7 @@ package host
 
 import (
 	"context"
-	"log"
-	"net/url"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -16,9 +15,7 @@ type options struct {
 	username   string
 	password   string
 	privateKEY string
-	netIF      string
 	workdir    string
-	values     map[string]string
 }
 
 type Option func(opt *options)
@@ -65,21 +62,10 @@ func WithPrivateKEY(key string) Option {
 	}
 }
 
-func WithNetIF(netIF string) Option {
-	return func(opt *options) {
-		opt.netIF = netIF
-	}
-}
-
 func WithWorkdir(workdir string) Option {
+	workdir = strings.TrimSuffix(workdir, "/")
 	return func(opt *options) {
 		opt.workdir = workdir
-	}
-}
-
-func WithValues(values map[string]string) Option {
-	return func(opt *options) {
-		opt.values = values
 	}
 }
 
@@ -88,60 +74,13 @@ type Host struct {
 }
 
 func New(opts ...Option) Runtime {
-	h := &Host{options: &options{}}
+	h := &Host{options: &options{
+		workdir: "/var/ssh-pty/workdir",
+	}}
 	for _, opt := range opts {
 		opt(h.options)
 	}
 	return h
-}
-
-func NewFromDSN(URL *url.URL) Runtime {
-	query := URL.Query()
-	if query == nil {
-		log.Fatalln("hosts dsn format invalid:", URL.String())
-	}
-
-	netIF := URL.Scheme
-	hostname := query.Get("hostname")
-	internal := query.Get("internal")
-	workdir := query.Get("workdir")
-	privateKEY := query.Get("private-key")
-	address := URL.Hostname()
-	port := URL.Port()
-	username := ""
-	password := ""
-	if URL.User != nil {
-		username = URL.User.Username()
-		password, _ = URL.User.Password()
-	}
-
-	values := make(map[string]string, len(query))
-	for k, v := range query {
-		if k != "" && len(v) > 0 && v[0] != "" {
-			values[k] = v[0]
-		}
-	}
-
-	delete(values, "hostname")
-	delete(values, "internal")
-	delete(values, "workdir")
-	delete(values, "private-key")
-
-	if workdir == "" {
-		workdir = "/var/ssh-pty/workdir"
-	}
-
-	return New(
-		WithHostname(hostname),
-		WithInternal(internal),
-		WithAddress(address),
-		WithPort(port),
-		WithUsername(username),
-		WithPassword(password),
-		WithNetIF(netIF),
-		WithWorkdir(strings.TrimSuffix(workdir, "/")),
-		WithPrivateKEY(privateKEY),
-		WithValues(values))
 }
 
 func (h *Host) Hostname(context.Context) string {
@@ -172,16 +111,13 @@ func (h *Host) PrivateKEY(context.Context) string {
 	return h.privateKEY
 }
 
-func (h *Host) NetIF(context.Context) string {
-	return h.netIF
-}
-
 func (h *Host) Workdir(context.Context) string {
 	return h.workdir
 }
 
-func (h *Host) Values(context.Context) map[string]string {
-	return h.values
+func (h *Host) String(ctx context.Context) string {
+	return fmt.Sprintf("%s:***@%s:%s/%s?hostname=%s&privateKey=***",
+		h.Username(ctx), h.Address(ctx), h.Port(ctx), strings.TrimPrefix(h.Workdir(ctx), "/"), h.Hostname(ctx))
 }
 
 func (h *Host) PTY(ctx context.Context, name string) Pty {

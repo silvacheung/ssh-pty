@@ -3,36 +3,34 @@ package conf
 import (
 	"bytes"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 )
 
 type Config struct {
 	*viper.Viper
-	Metadata map[string]any
+	raw []byte
 }
 
 func New(file string) (config *Config, err error) {
-	config = &Config{
-		Viper:    viper.New(),
-		Metadata: make(map[string]any),
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
 	}
 
-	f, e := os.Open(file)
-	if e != nil {
-		return nil, e
+	bs, err := io.ReadAll(f)
+	if err != nil {
+		return nil, err
 	}
 
-	bs, e := io.ReadAll(f)
-	if e != nil {
-		return nil, e
-	}
-
-	if e = yaml.Unmarshal(bs, &config.Metadata); e != nil {
-		return nil, e
-	}
-
+	config = &Config{Viper: viper.New(), raw: bs}
 	config.SetConfigType("yaml")
-	return config, config.ReadConfig(bytes.NewReader(bs))
+	return config, config.ReadConfig(bytes.NewReader(config.raw))
+}
+
+func (c *Config) Clone() *Config {
+	clone := &Config{Viper: viper.New(), raw: c.raw}
+	clone.SetConfigType("yaml")
+	_ = clone.ReadConfig(bytes.NewReader(clone.raw))
+	return clone
 }

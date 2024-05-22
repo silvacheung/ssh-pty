@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -44,7 +45,12 @@ func NewXterm(ctx context.Context, host Runtime) Pty {
 		authMethods = append(authMethods, ssh.Password(pass))
 	}
 	if KEY := xt.host.PrivateKEY(xt.ctx); len(KEY) > 0 {
-		signer, err := ssh.ParsePrivateKey([]byte(KEY))
+		pem, err := base64.StdEncoding.DecodeString(KEY)
+		if err != nil {
+			xt.err = err
+			return xt
+		}
+		signer, err := ssh.ParsePrivateKey(pem)
 		if err != nil {
 			xt.err = err
 			return xt
