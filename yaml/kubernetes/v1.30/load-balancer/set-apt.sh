@@ -60,9 +60,3 @@ deb ${APT_MIRROR}/debian stable-backports main non-free-firmware
 deb-src ${APT_MIRROR}/debian stable-backports main non-free-firmware
 EOF
 fi
-
-# 安装必要包
-apt update
-apt -y install sudo gnupg ncat selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2
-#apt -y upgrade sudo gnupg ncat selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2
-source /etc/profile

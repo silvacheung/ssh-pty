@@ -27,17 +27,17 @@ if [ -f /etc/apt/sources.list ]; then
   fi
 
   cat >/etc/apt/sources.list<<EOF
-deb ${APT_MIRROR}/debian stable main
-deb-src ${APT_MIRROR}/debian stable main
+deb ${APT_MIRROR}/debian stable main non-free-firmware
+deb-src ${APT_MIRROR}/debian stable main non-free-firmware
 
-deb ${APT_MIRROR}/debian-security stable-security main
-deb-src ${APT_MIRROR}/debian-security stable-security main
+deb ${APT_MIRROR}/debian-security stable-security main non-free-firmware
+deb-src ${APT_MIRROR}/debian-security stable-security main non-free-firmware
 
-deb ${APT_MIRROR}/debian stable-updates main
-deb-src ${APT_MIRROR}/debian stable-updates main
+deb ${APT_MIRROR}/debian stable-updates main non-free-firmware
+deb-src ${APT_MIRROR}/debian stable-updates main non-free-firmware
 
-deb ${APT_MIRROR}/debian stable-backports main
-deb-src ${APT_MIRROR}/debian stable-backports main
+deb ${APT_MIRROR}/debian stable-backports main non-free-firmware
+deb-src ${APT_MIRROR}/debian stable-backports main non-free-firmware
 EOF
 fi
 
@@ -47,17 +47,17 @@ if [ -f /etc/apt/sources.list.d/debian.sources ]; then
   fi
 
   cat >/etc/apt/sources.list.d/debian.sources<<EOF
-deb ${APT_MIRROR}/debian stable main
-deb-src ${APT_MIRROR}/debian stable main
+deb ${APT_MIRROR}/debian stable main non-free-firmware
+deb-src ${APT_MIRROR}/debian stable main non-free-firmware
 
-deb ${APT_MIRROR}/debian-security stable-security main
-deb-src ${APT_MIRROR}/debian-security stable-security main
+deb ${APT_MIRROR}/debian-security stable-security main non-free-firmware
+deb-src ${APT_MIRROR}/debian-security stable-security main non-free-firmware
 
-deb ${APT_MIRROR}/debian stable-updates main
-deb-src ${APT_MIRROR}/debian stable-updates main
+deb ${APT_MIRROR}/debian stable-updates main non-free-firmware
+deb-src ${APT_MIRROR}/debian stable-updates main non-free-firmware
 
-deb ${APT_MIRROR}/debian stable-backports main
-deb-src ${APT_MIRROR}/debian stable-backports main
+deb ${APT_MIRROR}/debian stable-backports main non-free-firmware
+deb-src ${APT_MIRROR}/debian stable-backports main non-free-firmware
 EOF
 fi
 

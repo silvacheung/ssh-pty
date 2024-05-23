@@ -35,6 +35,14 @@ certificatesDir: "/etc/kubernetes/pki"
 etcd:
   local:
     dataDir: "/var/lib/etcd"
+    extraArgs:
+      max-request-bytes: "$((10*1024*1024))"
+      quota-backend-bytes: "$((8*1024*1024*1024))"
+      auto-compaction-retention: "1000"
+      auto-compaction-mode: "revision"
+      snapshot-count: "50000"
+      election-timeout: "3000"
+      heartbeat-interval: "600"
 
 networking:
   dnsDomain: "cluster.local"
@@ -51,6 +59,9 @@ apiServer:
     request-timeout: "1m0s"
     service-account-lookup: "true"
     enable-aggregator-routing: "true"
+    max-requests-inflight: "3000"
+    max-mutating-requests-inflight: "1000"
+    watch-cache-sizes: "nodes#1000,services#1000,pods#5000"
     audit-log-format: "json"
     audit-log-maxbackup: "2"
     audit-log-maxsize: "200"
@@ -84,6 +95,8 @@ controllerManager:
     terminated-pod-gc-threshold: "100"
     allocate-node-cidrs: "true"
     use-service-account-credentials: "true"
+    kube-api-qps: "100"
+    kube-api-burst: "150"
     node-cidr-mask-size: "{{ get "config.k8s.node_cidr_mask_size" }}"
     feature-gates: "RotateKubeletServerCertificate=true"
   extraVolumes:
@@ -96,7 +109,9 @@ controllerManager:
 scheduler:
   extraArgs:
     bind-address: "0.0.0.0"
-    profiling:    "false"
+    profiling: "false"
+    kube-api-qps: "100"
+    kube-api-burst: "150"
     feature-gates: "RotateKubeletServerCertificate=true"
   extraVolumes:
   - name: "host-time"
@@ -212,6 +227,8 @@ eventRecordQPS: 50
 streamingConnectionIdleTimeout: "5m"
 evictionPressureTransitionPeriod: "30s"
 evictionMaxPodGracePeriod: 120
+serializeImagePulls: false # docker <= 1.9 or use 'aufs' must set true
+maxParallelImagePulls: 10
 #failSwapOn: true
 
 systemReserved:

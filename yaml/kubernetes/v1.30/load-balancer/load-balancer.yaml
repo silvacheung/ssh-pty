@@ -18,6 +18,7 @@ config:
 
 script:
   - yaml/kubernetes/v1.30/load-balancer/set-pre-check.sh
+  - yaml/kubernetes/v1.30/load-balancer/set-apt.sh
   - yaml/kubernetes/v1.30/load-balancer/set-hostname.sh
   - yaml/kubernetes/v1.30/load-balancer/set-resolv-conf.sh
   - yaml/kubernetes/v1.30/load-balancer/set-lb-install.sh

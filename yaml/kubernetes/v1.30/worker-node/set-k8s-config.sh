@@ -51,4 +51,25 @@ discovery:
 
 #skipPhases:
 #- "addon/kube-proxy"
+
+#---
+# see https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta4/
+#apiVersion: kubeadm.k8s.io/v1beta4
+#kind: ResetConfiguration
+#
+#dryRun: false
+#force: false
+#
+#cleanupTmpDir: true
+#certificatesDir: "/etc/kubernetes/pki"
+#criSocket: "unix:///var/run/containerd/containerd.sock"
+#
+#ignorePreflightErrors:
+#- "IsPrivilegedUser"
+#- "FileExisting-crictl"
+#- "ImagePull"
+#
+#skipPhases:
+#- "addon/kube-proxy"
+
 EOF
