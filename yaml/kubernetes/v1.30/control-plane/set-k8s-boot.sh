@@ -9,9 +9,9 @@ fi
 
 # 初始化
 {{- if eq (get "hosts.0.hostname") (get "host.hostname") }}
-kubeadm init --upload-certs --config /etc/kubernetes/kubeadm-config.yaml
+kubeadm init --upload-certs --config /etc/kubernetes/kubeadm-config.yaml --v=5
 {{- else }}
-kubeadm join --config /etc/kubernetes/kubeadm-config.yaml
+kubeadm join --config /etc/kubernetes/kubeadm-config.yaml --v=5
 {{- end }}
 
 # 拷贝文件

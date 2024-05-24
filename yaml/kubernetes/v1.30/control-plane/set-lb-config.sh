@@ -2,6 +2,8 @@
 
 set -e
 
+{{- if eq (get "config.k8s.control_plane_endpoint.balancer") "" }}
+
 # 创建目录
 mkdir -p /etc/haproxy
 mkdir -p /etc/keepalived
@@ -58,7 +60,7 @@ defaults
 # kube-api-server frontend which proxys to the control plane nodes
 #---------------------------------------------------------------------
 frontend f-kube-api-server
-  bind  *:{{ get "config.frontend" }}
+  bind  *:{{ get "config.k8s.control_plane_endpoint.port" }}
   mode  tcp
   option  tcplog
   default_backend b-kube-api-server
@@ -70,8 +72,8 @@ backend b-kube-api-server
   mode  tcp
   option  ssl-hello-chk
   balance roundrobin
-  {{- range (get "config.backends") }}
-  server {{ .hostname }} {{ .endpoint }} check inter 3s weight 100 fall 3 rise 3
+  {{- range (get "hosts") }}
+  server {{ .hostname }} {{ .internal }}:6443 check inter 3s weight 100 fall 3 rise 3
   {{- end }}
 
 #---------------------------------------------------------------------
@@ -132,7 +134,7 @@ vrrp_instance haproxy-vip {
     {{- end }}
   }
   virtual_ipaddress {
-    {{ get "config.virtual_ip" }}
+    {{ get "config.k8s.control_plane_endpoint.address" }}/24
   }
   track_script {
     check_haproxy_vip
@@ -144,7 +146,9 @@ EOF
 echo "写入Keepalived检测脚本"
 cat >/etc/keepalived/check-api-server.sh<<EOF
 #!/bin/sh
-curl -sfk --max-time 3 https://localhost:{{ get "config.frontend" }}/healthz -o /dev/null
+curl -sfk --max-time 3 https://localhost:{{ get "config.k8s.control_plane_endpoint.port" }}/healthz -o /dev/null
 EOF
 
 chmod +x /etc/keepalived/check-api-server.sh
+
+{{- end }}

@@ -2,11 +2,11 @@
 
 set -e
 
-# 创建目录
+{{- if eq (get "config.k8s.control_plane_endpoint.balancer") "haproxy" }}
+
 mkdir -p /etc/haproxy
 mkdir -p /etc/keepalived
 
-# 获取主机网卡接口
 NET_IF=$(ip route | grep ' {{ get "host.address" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
 if [ "${NET_IF}" == "" ]; then
   NET_IF=$(ip route | grep ' {{ get "host.internal" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
@@ -17,7 +17,6 @@ if [ "${NET_IF}" == "" ]; then
   exit 1
 fi
 
-# 写入Haproxy配置文件
 echo "写入Haproxy配置文件"
 cat > /etc/haproxy/haproxy.cfg << EOF
 # /etc/haproxy/haproxy.cfg
@@ -26,9 +25,6 @@ cat > /etc/haproxy/haproxy.cfg << EOF
 #---------------------------------------------------------------------
 global
   log           127.0.0.1 local0
-  chroot        /var/lib/haproxy
-  pidfile       /var/run/haproxy.pid
-  stats socket  /var/lib/haproxy/stats
   maxconn       4000
   daemon
 
@@ -58,7 +54,7 @@ defaults
 # kube-api-server frontend which proxys to the control plane nodes
 #---------------------------------------------------------------------
 frontend f-kube-api-server
-  bind  *:{{ get "config.frontend" }}
+  bind  *:{{ get "config.k8s.control_plane_endpoint.port" }}
   mode  tcp
   option  tcplog
   default_backend b-kube-api-server
@@ -70,8 +66,8 @@ backend b-kube-api-server
   mode  tcp
   option  ssl-hello-chk
   balance roundrobin
-  {{- range (get "config.backends") }}
-  server {{ .hostname }} {{ .endpoint }} check inter 3s weight 100 fall 3 rise 3
+  {{- range (get "hosts") }}
+  server {{ .hostname }} {{ .internal }}:6443 check inter 3s weight 100 fall 3 rise 3
   {{- end }}
 
 #---------------------------------------------------------------------
@@ -87,7 +83,6 @@ backend b-kube-api-server
 #  stats uri /stats
 EOF
 
-# 写入Keepalived配置文件
 echo "写入Keepalived配置文件"
 cat > /etc/keepalived/keepalived.conf << EOF
 ! /etc/keepalived/keepalived.conf
@@ -132,7 +127,7 @@ vrrp_instance haproxy-vip {
     {{- end }}
   }
   virtual_ipaddress {
-    {{ get "config.virtual_ip" }}
+    {{ get "config.k8s.control_plane_endpoint.address" }}/24
   }
   track_script {
     check_haproxy_vip
@@ -144,7 +139,76 @@ EOF
 echo "写入Keepalived检测脚本"
 cat >/etc/keepalived/check-api-server.sh<<EOF
 #!/bin/sh
-curl -sfk --max-time 3 https://localhost:{{ get "config.frontend" }}/healthz -o /dev/null
+curl -sfk --max-time 3 https://localhost:{{ get "config.k8s.control_plane_endpoint.port" }}/healthz -o /dev/null
 EOF
 
 chmod +x /etc/keepalived/check-api-server.sh
+
+# see https://github.com/kubernetes/kubeadm/blob/main/docs/ha-considerations.md#options-for-software-load-balancing
+echo "创建Haproxy静态Pod部署清单"
+cat > /etc/kubernetes/manifests/haproxy.yaml << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: haproxy
+  namespace: kube-system
+  creationTimestamp: null
+spec:
+  hostNetwork: true
+  containers:
+  - image: registry.cn-chengdu.aliyuncs.com/silva-cheung/haproxy:2.9
+    name: haproxy
+    resources: {}
+    livenessProbe:
+      failureThreshold: 5
+      httpGet:
+        scheme: HTTPS
+        host: localhost
+        port: {{ get "config.k8s.control_plane_endpoint.port" }}
+        path: /healthz
+    volumeMounts:
+    - name: haproxy-config
+      mountPath: /usr/local/etc/haproxy/haproxy.cfg
+      readOnly: true
+  volumes:
+  - name: haproxy-config
+    hostPath:
+      path: /etc/haproxy/haproxy.cfg
+      type: FileOrCreate
+EOF
+
+# see https://github.com/kubernetes/kubeadm/blob/main/docs/ha-considerations.md#options-for-software-load-balancing
+echo "创建Keepalived静态Pod部署清单"
+cat > /etc/kubernetes/manifests/keepalived.yaml << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: keepalived
+  namespace: kube-system
+  creationTimestamp: null
+spec:
+  hostNetwork: true
+  containers:
+  - image: registry.cn-chengdu.aliyuncs.com/silva-cheung/keepalived:2.0.20
+    name: keepalived
+    resources: {}
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_BROADCAST
+        - NET_RAW
+    volumeMounts:
+    - name: keepalived-config
+      mountPath: /usr/local/etc/keepalived/keepalived.conf
+    - name: keepalived-check
+      mountPath: /etc/keepalived/check-api-server.sh
+  volumes:
+  - name: keepalived-config
+    hostPath:
+      path: /etc/keepalived/keepalived.conf
+  - name: keepalived-check
+    hostPath:
+      path: /etc/keepalived/check-api-server.sh
+EOF
+{{- end }}

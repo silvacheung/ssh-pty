@@ -50,6 +50,7 @@ networking:
   podSubnet: "{{ get "config.k8s.pod_subnet" }}"
 
 apiServer:
+  timeoutForControlPlane: "10m0s"
   extraArgs:
     bind-address: "0.0.0.0"
     authorization-mode: "Node,RBAC"
@@ -223,25 +224,35 @@ containerLogMaxSize: "5Mi"
 containerLogMaxFiles: 3
 staticPodPath: "/etc/kubernetes/manifests"
 containerRuntimeEndpoint: "unix:///var/run/containerd/containerd.sock"
-eventRecordQPS: 50
 streamingConnectionIdleTimeout: "5m"
 evictionPressureTransitionPeriod: "30s"
 evictionMaxPodGracePeriod: 120
 serializeImagePulls: false # docker <= 1.9 or use 'aufs' must set true
 maxParallelImagePulls: 10
-#failSwapOn: true
+registryPullQPS: 10
+registryBurst: 20
+eventRecordQPS: 100
+eventBurst: 150
+kubeAPIQPS: 100
+kubeAPIBurst: 150
+maxOpenFiles: 1024000
+failSwapOn: true
+runtimeRequestTimeout: "10m"
 
 systemReserved:
-  cpu: "200m"
-  memory: "250Mi"
+  cpu: "500m"
+  memory: "500Mi"
 
 kubeReserved:
-  cpu: "200m"
-  memory: "250Mi"
+  cpu: "500m"
+  memory: "500Mi"
 
 evictionHard:
   memory.available: "5%"
-  pid.available:    "10%"
+  pid.available: "10%"
+  nodefs.available: "10%"
+  nodefs.inodesFree: "5%"
+  imagefs.available: "15%"
 
 evictionSoft:
   memory.available: "10%"

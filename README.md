@@ -74,6 +74,7 @@ rm -rf ${HOME}/.kube
 rm -rf /etc/haproxy
 rm -rf /etc/keepalived
 rm -rf /var/lib/haproxy
+rm -rf /var/run/haproxy*
 
 # reload
 systemctl daemon-reload

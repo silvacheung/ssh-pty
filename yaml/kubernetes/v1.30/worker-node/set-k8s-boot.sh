@@ -8,4 +8,4 @@ if [ "$(systemctl is-active kubelet)" == "active" ]; then
 fi
 
 # 初始化
-kubeadm join --config /etc/kubernetes/kubeadm-config.yaml
+kubeadm join --config /etc/kubernetes/kubeadm-config.yaml --v=5
