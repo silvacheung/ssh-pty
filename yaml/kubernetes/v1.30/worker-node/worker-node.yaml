@@ -5,7 +5,7 @@ hosts:
 
 config:
   k8s:
-    version: "1.29.5"
+    version: "1.30.0"
     control_plane_endpoint:
       domain: "k8s.api-server.lb"
       address: "172.16.67.204"

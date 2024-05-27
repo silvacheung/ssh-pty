@@ -5,10 +5,10 @@ hosts:
 
 config:
   k8s:
-    version: "1.29.5"
+    version: "1.30.0"
     cluster_name: "alpha"
     control_plane_endpoint:
-      balancer: ""
+      balancer: "haproxy"
       domain: "k8s.api-server.lb"
       address: "172.16.67.204"
       port: "9443"
