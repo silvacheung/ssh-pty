@@ -43,6 +43,7 @@ EOF
 
 # 删除dashboard代理服务
 kubectl delete -n kubernetes-dashboard service/kubernetes-dashboard-kong-proxy
+kubectl delete -n kubernetes-dashboard service/kubernetes-dashboard-kong-manager
 
 # 创建dashboard代理服务
 kubectl apply -f - <<EOF
