@@ -1,0 +1,309 @@
+expose:
+  type: loadBalancer
+  tls:
+    enabled: true
+    certSource: secret
+    secret:
+      secretName: "harbor-tls"
+  loadBalancer:
+    name: harbor
+    IP: ""
+    ports:
+      httpPort: 31080
+      httpsPort: 31443
+    labels:
+      kubernetes.io/service-ipam: "cilium.io"
+
+externalURL: https://core.harbor.domain
+persistence:
+  enabled: true
+  resourcePolicy: "keep"
+  persistentVolumeClaim:
+    registry:
+      storageClass: "local-storage"
+      subPath: "harbor-registry"
+      accessMode: ReadWriteOnce
+      size: 5Gi
+    jobservice:
+      jobLog:
+        storageClass: "local-storage"
+        subPath: "harbor-jobservice"
+        accessMode: ReadWriteOnce
+        size: 5Gi
+    database:
+      storageClass: "local-storage"
+      subPath: "harbor-database"
+      accessMode: ReadWriteOnce
+      size: 5Gi
+    redis:
+      storageClass: "local-storage"
+      subPath: "harbor-redis"
+      accessMode: ReadWriteOnce
+      size: 5Gi
+    trivy:
+      storageClass: "local-storage"
+      subPath: "harbor-trivy"
+      accessMode: ReadWriteOnce
+      size: 5Gi
+  imageChartStorage:
+    disableredirect: true
+    type: filesystem
+    filesystem:
+      rootdirectory: /storage
+      maxthreads: 100
+
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+harborAdminPassword: "Harbor12345"
+
+internalTLS:
+  enabled: true
+  strong_ssl_ciphers: true
+  certSource: "auto"
+
+ipFamily:
+  ipv6:
+    enabled: true
+  ipv4:
+    enabled: true
+
+imagePullPolicy: IfNotPresent
+imagePullSecrets:
+#  - name: docker-registry-secret
+#  - name: internal-registry-secret
+
+caSecretName: "harbor-tls"
+secretKey: "cg4N8mJ3mVkcjKq7"
+
+metrics:
+  enabled: true
+  core:
+    path: /metrics
+    port: 8001
+  registry:
+    path: /metrics
+    port: 8001
+  jobservice:
+    path: /metrics
+    port: 8001
+  exporter:
+    path: /metrics
+    port: 8001
+
+  serviceMonitor:
+    enabled: false
+    additionalLabels: {}
+    interval: ""
+
+cache:
+  enabled: true
+  expireHours: 24
+
+nginx:
+  replicas: 3
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      nodeTaintsPolicy: Honor
+      whenUnsatisfiable: DoNotSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+
+portal:
+  replicas: 3
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      nodeTaintsPolicy: Honor
+      whenUnsatisfiable: DoNotSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+
+core:
+  replicas: 3
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      nodeTaintsPolicy: Honor
+      whenUnsatisfiable: DoNotSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+
+jobservice:
+  replicas: 1
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      nodeTaintsPolicy: Honor
+      whenUnsatisfiable: DoNotSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+
+registry:
+  replicas: 3
+  registry:
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+  controller:
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      nodeTaintsPolicy: Honor
+      whenUnsatisfiable: DoNotSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+  credentials:
+    username: "harbor"
+    password: "ws7THbag3UdmJk9M"
+  upload_purging:
+    enabled: true
+    age: 168h
+    interval: 24h
+    dryrun: false
+
+trivy:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      nodeTaintsPolicy: Honor
+      whenUnsatisfiable: DoNotSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+
+database:
+  type: internal
+  internal:
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+    livenessProbe:
+      timeoutSeconds: 3
+    readinessProbe:
+      timeoutSeconds: 3
+    password: "9p%S@e#Sg$#V$hN1"
+    shmSizeLimit: 512Mi
+    initContainer:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 100m
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+
+redis:
+  type: internal
+  internal:
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
+
+exporter:
+  replicas: 3
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      nodeTaintsPolicy: Honor
+      whenUnsatisfiable: DoNotSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - xxx
