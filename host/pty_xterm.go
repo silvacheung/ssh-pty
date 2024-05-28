@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -44,11 +45,22 @@ func NewXterm(ctx context.Context, host Runtime) Pty {
 	if pass := xt.host.Password(xt.ctx); len(pass) > 0 {
 		authMethods = append(authMethods, ssh.Password(pass))
 	}
+	// cmd: ssh-keygen -m pem -t rsa -b 4096 -N "" -C "k8s-pty" -f /root/.ssh/id_rsa
+	// cmd: cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+	// cmd: chmod 600 /root/.ssh/authorized_keys
 	if KEY := xt.host.PrivateKEY(xt.ctx); len(KEY) > 0 {
-		pem, err := base64.StdEncoding.DecodeString(KEY)
-		if err != nil {
-			xt.err = err
-			return xt
+		pem, bErr := base64.StdEncoding.DecodeString(KEY)
+		if bErr != nil {
+			file, fErr := os.Open(KEY)
+			if fErr != nil {
+				xt.err = errors.Join(bErr, fErr)
+				return xt
+			}
+			defer func() { _ = file.Close() }()
+			if pem, fErr = io.ReadAll(file); fErr != nil {
+				xt.err = errors.Join(bErr, fErr)
+				return xt
+			}
 		}
 		signer, err := ssh.ParsePrivateKey(pem)
 		if err != nil {
