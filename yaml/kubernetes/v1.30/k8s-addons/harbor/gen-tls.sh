@@ -4,13 +4,13 @@ DOMAIN="${D_NAME}.com"
 
 openssl genrsa -out ca.key 4096
 openssl req -x509 -new -nodes -sha512 -days 3650 \
- -subj "/C=CN/ST=China/L=China/O=Harbor/OU=Personal/CN=${DOMAIN}" \
+ -subj "/C=CN/ST=Sichuan/L=Chengdu/O=Harbor/OU=Harbor/CN=${DOMAIN}" \
  -key ca.key \
  -out ca.crt
 
 openssl genrsa -out ${DOMAIN}.key 4096
 openssl req -sha512 -new \
-    -subj "/C=CN/ST=China/L=China/O=Harbor/OU=Personal/CN=${DOMAIN}" \
+    -subj "/C=CN/ST=Sichuan/L=Chengdu/O=Harbor/OU=Harbor/CN=${DOMAIN}" \
     -key ${DOMAIN}.key \
     -out ${DOMAIN}.csr
 

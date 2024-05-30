@@ -1,19 +1,20 @@
 # 部署Harbor仓库,[参考](https://github.com/goharbor/harbor-helm)
 
 - (1)生成harbor的自签名证书,[参考](https://goharbor.io/docs/2.10.0/install-config/configure-https/)
+
 ```shell
 D_NAME="harbor-registry"
 DOMAIN="${D_NAME}.com"
 
 openssl genrsa -out ca.key 4096
 openssl req -x509 -new -nodes -sha512 -days 3650 \
- -subj "/C=CN/ST=China/L=China/O=Harbor/OU=Personal/CN=${DOMAIN}" \
+ -subj "/C=CN/ST=Sichuan/L=Chengdu/O=Harbor/OU=Harbor/CN=${DOMAIN}" \
  -key ca.key \
  -out ca.crt
- 
-openssl genrsa -out yourdomain.com.key 4096
+
+openssl genrsa -out ${DOMAIN}.key 4096
 openssl req -sha512 -new \
-    -subj "/C=CN/ST=China/L=China/O=Harbor/OU=Personal/CN=${DOMAIN}" \
+    -subj "/C=CN/ST=Sichuan/L=Chengdu/O=Harbor/OU=Harbor/CN=${DOMAIN}" \
     -key ${DOMAIN}.key \
     -out ${DOMAIN}.csr
 
@@ -39,7 +40,9 @@ openssl x509 -inform PEM -in ${DOMAIN}.crt -out ${DOMAIN}.cert
 ```
 
 - (2)部署harbor的secret
+
 ```shell
+cat >harbor-secret.yaml<<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -50,21 +53,26 @@ data:
   ca.crt: $(cat ca.crt | base64 -w 0)
   tls.crt: $(cat ${DOMAIN}.crt | base64 -w 0)
   tls.key: $(cat ${DOMAIN}.key | base64 -w 0)
+EOF
 ```
 
 - (3)部署harbor的storageClass
-```yaml
+
+```shell
+cat >harbor-storage.yaml<<EOF
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: local-storage
+  name: harbor-storage
 provisioner: kubernetes.io/no-provisioner
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
+EOF
 ```
 
 - (4)部署harbor的PV
+
 ```shell
 mkdir -p /mnt/harbor-registry
 mkdir -p /mnt/harbor-jobservice
@@ -86,7 +94,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
+  storageClassName: harbor-storage
   local:
     path: /mnt/harbor-registry
   nodeAffinity:
@@ -110,7 +118,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
+  storageClassName: harbor-storage
   local:
     path: /mnt/harbor-jobservice
   nodeAffinity:
@@ -134,7 +142,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
+  storageClassName: harbor-storage
   local:
     path: /mnt/harbor-database
   nodeAffinity:
@@ -158,7 +166,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
+  storageClassName: harbor-storage
   local:
     path: /mnt/harbor-redis
   nodeAffinity:
@@ -182,7 +190,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
+  storageClassName: harbor-storage
   local:
     path: /mnt/harbor-trivy
   nodeAffinity:
@@ -197,7 +205,9 @@ spec:
 ```
 
 - (5)配置harbor的[values.yaml](values.yaml)
+
 - (6)部署harbor
+
 ```shell
 helm repo add harbor https://helm.goharbor.io
 helm install harbor-registry harbor/harbor -f values.yaml

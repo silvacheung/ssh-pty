@@ -1,10 +1,19 @@
 expose:
-  type: loadBalancer
+  type: nodePort
   tls:
     enabled: true
     certSource: secret
     secret:
       secretName: "harbor-tls"
+  nodePort:
+    name: harbor
+    ports:
+      http:
+        port: 80
+        nodePort: 31080
+      https:
+        port: 443
+        nodePort: 31443
   loadBalancer:
     name: harbor
     IP: ""
@@ -20,28 +29,28 @@ persistence:
   resourcePolicy: "keep"
   persistentVolumeClaim:
     registry:
-      storageClass: "local-storage"
+      storageClass: "harbor-storage"
       subPath: "harbor-registry"
       accessMode: ReadWriteOnce
       size: 5Gi
     jobservice:
       jobLog:
-        storageClass: "local-storage"
+        storageClass: "harbor-storage"
         subPath: "harbor-jobservice"
         accessMode: ReadWriteOnce
         size: 5Gi
     database:
-      storageClass: "local-storage"
+      storageClass: "harbor-storage"
       subPath: "harbor-database"
       accessMode: ReadWriteOnce
       size: 5Gi
     redis:
-      storageClass: "local-storage"
+      storageClass: "harbor-storage"
       subPath: "harbor-redis"
       accessMode: ReadWriteOnce
       size: 5Gi
     trivy:
-      storageClass: "local-storage"
+      storageClass: "harbor-storage"
       subPath: "harbor-trivy"
       accessMode: ReadWriteOnce
       size: 5Gi
@@ -99,7 +108,7 @@ cache:
   expireHours: 24
 
 nginx:
-  replicas: 3
+  replicas: 2
   resources:
     requests:
       memory: 256Mi
@@ -120,7 +129,7 @@ nginx:
                   - xxx
 
 portal:
-  replicas: 3
+  replicas: 1
   resources:
     requests:
       memory: 256Mi
@@ -141,7 +150,7 @@ portal:
                   - xxx
 
 core:
-  replicas: 3
+  replicas: 1
   resources:
     requests:
       memory: 256Mi
@@ -183,7 +192,7 @@ jobservice:
                   - xxx
 
 registry:
-  replicas: 3
+  replicas: 1
   registry:
     resources:
       requests:
@@ -288,7 +297,7 @@ redis:
                   - xxx
 
 exporter:
-  replicas: 3
+  replicas: 1
   resources:
     requests:
       memory: 256Mi
