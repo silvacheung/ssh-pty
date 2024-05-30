@@ -19,6 +19,8 @@ type Runtime interface {
 	Password(context.Context) string
 	// PrivateKEY 获取本主机SSH私钥
 	PrivateKEY(context.Context) string
+	// Passphrase 密钥密码
+	Passphrase(context.Context) string
 	// Workdir 返回工作目录
 	Workdir(context.Context) string
 	// String 返回主机格式化

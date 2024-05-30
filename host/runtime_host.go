@@ -15,6 +15,7 @@ type options struct {
 	username   string
 	password   string
 	privateKEY string
+	passphrase string
 	workdir    string
 }
 
@@ -59,6 +60,12 @@ func WithPassword(password string) Option {
 func WithPrivateKEY(key string) Option {
 	return func(opt *options) {
 		opt.privateKEY = key
+	}
+}
+
+func WithPassphrase(pwd string) Option {
+	return func(opt *options) {
+		opt.passphrase = pwd
 	}
 }
 
@@ -109,6 +116,10 @@ func (h *Host) Password(context.Context) string {
 
 func (h *Host) PrivateKEY(context.Context) string {
 	return h.privateKEY
+}
+
+func (h *Host) Passphrase(context.Context) string {
+	return h.passphrase
 }
 
 func (h *Host) Workdir(context.Context) string {

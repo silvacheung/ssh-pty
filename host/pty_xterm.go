@@ -31,7 +31,7 @@ type Xterm struct {
 
 func NewXterm(ctx context.Context, host Runtime) Pty {
 	var xt *Xterm
-	key := fmt.Sprintf("%s(%s)", host.Hostname(ctx), host.Address(ctx))
+	key := fmt.Sprintf("%s@%s(%s)", host.Username(ctx), host.Address(ctx), host.Hostname(ctx))
 	val, ok := xterm.Load(key)
 	if ok && val != nil {
 		xt = val.(*Xterm)
@@ -42,12 +42,12 @@ func NewXterm(ctx context.Context, host Runtime) Pty {
 
 	xt = &Xterm{ctx: ctx, host: host}
 	authMethods := make([]ssh.AuthMethod, 0, 2)
-	if pass := xt.host.Password(xt.ctx); len(pass) > 0 {
-		authMethods = append(authMethods, ssh.Password(pass))
+	if pwd := xt.host.Password(xt.ctx); len(pwd) > 0 {
+		authMethods = append(authMethods, ssh.Password(pwd))
 	}
-	// cmd: ssh-keygen -m pem -t rsa -b 4096 -N "" -C "k8s-pty" -f /root/.ssh/id_rsa
-	// cmd: cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
-	// cmd: chmod 600 /root/.ssh/authorized_keys
+	// cmd: ssh-keygen -m pem -t rsa -b 4096 -N "" -C "k8s-pty" -f ~/.ssh/id_rsa
+	// cmd: cat /root/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+	// cmd: chmod 600 ~/.ssh/authorized_keys
 	if KEY := xt.host.PrivateKEY(xt.ctx); len(KEY) > 0 {
 		pem, bErr := base64.StdEncoding.DecodeString(KEY)
 		if bErr != nil {
@@ -62,11 +62,19 @@ func NewXterm(ctx context.Context, host Runtime) Pty {
 				return xt
 			}
 		}
-		signer, err := ssh.ParsePrivateKey(pem)
-		if err != nil {
-			xt.err = err
+
+		var signer ssh.Signer
+		switch phrase := xt.host.Passphrase(ctx); {
+		case len(phrase) <= 0:
+			signer, xt.err = ssh.ParsePrivateKey(pem)
+		default:
+			signer, xt.err = ssh.ParsePrivateKeyWithPassphrase(pem, []byte(phrase))
+		}
+
+		if xt.err != nil {
 			return xt
 		}
+
 		authMethods = append(authMethods, ssh.PublicKeys(signer))
 	}
 	endpoint := xt.host.Address(xt.ctx) + ":" + xt.host.Port(xt.ctx)
@@ -79,6 +87,10 @@ func NewXterm(ctx context.Context, host Runtime) Pty {
 	})
 	if xt.err == nil {
 		xt.sftp, xt.err = sftp.NewClient(xt.shell)
+	}
+
+	if xt.err == nil {
+		xterm.Store(key, xt)
 	}
 
 	return xt

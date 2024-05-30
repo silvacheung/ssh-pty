@@ -11,9 +11,9 @@
 # {{ get "host" }}: 取值当前主机
 # {{ get "hosts.0" }}: 取值第一个主机
 hosts:
-  - { hostname: std-17216671, address: 172.16.67.201, internal: 172.16.67.1, port: 22, username: root, password: std671, workdir: /root/k8s, private_key: "" }
-  - { hostname: std-17216672, address: 172.16.67.202, internal: 172.16.67.2, port: 22, username: root, password: std672, workdir: /root/k8s, private_key: "" }
-  - { hostname: std-17216673, address: 172.16.67.203, internal: 172.16.67.3, port: 22, username: root, password: std673, workdir: /root/k8s, private_key: "" }
+  - { hostname: std-17216671, address: 172.16.67.201, internal: 172.16.67.1, port: 22, username: root, password: std671, workdir: /root/k8s, private_key: "", passphrase: "" }
+  - { hostname: std-17216672, address: 172.16.67.202, internal: 172.16.67.2, port: 22, username: root, password: std672, workdir: /root/k8s, private_key: "", passphrase: "" }
+  - { hostname: std-17216673, address: 172.16.67.203, internal: 172.16.67.3, port: 22, username: root, password: std673, workdir: /root/k8s, private_key: "", passphrase: "" }
 
 # 配置脚本模板中的数据
 # 可以从模板文件中取值

@@ -41,7 +41,8 @@ func (exec *Executor) Executing(ctx context.Context) (err error) {
 			host.WithPort(exec.config.GetString(key+".port")),
 			host.WithUsername(exec.config.GetString(key+".username")),
 			host.WithPassword(exec.config.GetString(key+".password")),
-			host.WithPrivateKEY(exec.config.GetString(key+".privateKey")),
+			host.WithPrivateKEY(exec.config.GetString(key+".private_key")),
+			host.WithPassphrase(exec.config.GetString(key+".passphrase")),
 			host.WithWorkdir(exec.config.GetString(key+".workdir")),
 		)
 
