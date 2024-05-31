@@ -52,4 +52,28 @@ spec:
   resources:
     requests:
       storage: 10Mi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    name: nginx
+spec:
+  automountServiceAccountToken: false
+  containers:
+    - image: nginx:1.26-alpine
+      name: nginx
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 80
+          protocol: TCP
+      volumeMounts:
+        - name: nginx-data
+          mountPath: /var/nginx
+  volumes:
+    - name: nginx-data
+      persistentVolumeClaim:
+        claimName: nfs-pvc
 ```
