@@ -239,6 +239,12 @@ maxOpenFiles: 1024000
 failSwapOn: true
 runtimeRequestTimeout: "10m"
 
+#authorization:
+#  mode: AlwaysAllow
+#  webhook:
+#    cacheAuthorizedTTL: "5m"
+#    cacheUnauthorizedTTL: "30s"
+
 systemReserved:
   cpu: "500m"
   memory: "500Mi"
