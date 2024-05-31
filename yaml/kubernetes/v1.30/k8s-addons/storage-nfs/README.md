@@ -15,6 +15,7 @@ helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/
 # 部署provisioner，根据具体需要调整部署value
 # 默认的repository需要替换为:
 # registry.k8s.io/sig-storage/nfs-subdir-external-provisioner --> k8s.nju.edu.cn/sig-storage/nfs-subdir-external-provisioner
+# 不需要创建storageClass时设置'storageClass.create=false'
 helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
 	--set image.repository=k8s.nju.edu.cn/sig-storage/nfs-subdir-external-provisioner \
 	--set replicaCount=3 \
@@ -23,6 +24,7 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 	--set nfs.volumeName=nfs-mnt-data \
 	--set nfs.reclaimPolicy=Delete \
 	--set strategyType=Recreate \
+	--set storageClass.create=true \
 	--set storageClass.name=nfs-ext-subdir \
 	--set storageClass.provisionerName=k8s-sigs.io/nfs-subdir-external-provisioner \
 	--set storageClass.allowVolumeExpansion=true \
@@ -37,7 +39,33 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 	--set nfs.mountOptions[0]=nfsvers=4
 ```
 
-- (3)使用部署的NFS的Provisioner和storageClass部署PVC资源
+- (3)上面已经部署了一个storageClass，我们可以直接使用，我们也可以自己创建一个
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-ext-subdir-custom
+  annotations:
+    nfs.io/storage-path: "nfs-path"
+provisioner: k8s-sigs.io/nfs-subdir-external-provisioner
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: kubernetes.io/os
+        values:
+          - linux
+mountOptions:
+  - "nfsvers=4"
+parameters:
+  archiveOnDelete: "true"
+  onDelete: "retain"
+  # format: ${.PVC.<metadata>}
+  pathPattern: "${.PVC.namespace}/${.PVC.annotations.nfs.io/storage-path}"
+```
+
+- (4)使用部署的NFS的Provisioner和storageClass部署PVC资源
 
 ```yaml
 ---
