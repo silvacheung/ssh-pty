@@ -42,7 +42,7 @@ config:
       quay.io: https://quay.mirrors.ustc.edu.cn
       #k8s.gcr.io: https://registry.aliyuncs.com/google_containers
       k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
-      registry.k8s.io: https://registry.aliyuncs.com/google_containers
+      registry.k8s.io: https://k8s.nju.edu.cn/
       harbor.local: http://harbor.local
     auths:
       harbor.local:
