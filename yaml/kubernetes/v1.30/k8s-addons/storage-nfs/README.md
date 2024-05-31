@@ -1,6 +1,12 @@
 # 使用NFS挂载存储
 
-- (1)使用helm部署[Provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
+- (1)所有工作节点需要安装nfs-common
+
+```shell
+apt -y install nfs-common
+```
+
+- (2)使用helm部署[Provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
 
 ```shell
 # 添加chart仓库
@@ -31,7 +37,7 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
 	--set nfs.mountOptions[0]=nfsvers=4
 ```
 
-- (2)使用部署的NFS的Provisioner和storageClass部署PVC资源
+- (3)使用部署的NFS的Provisioner和storageClass部署PVC资源
 
 ```yaml
 ---
