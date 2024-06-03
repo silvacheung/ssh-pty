@@ -1,6 +1,6 @@
 # 部署Harbor仓库,[参考](https://github.com/goharbor/harbor-helm)
 
-- (1)生成harbor的自签名证书,[参考](https://goharbor.io/docs/2.10.0/install-config/configure-https/)
+- (1)生成harbor的自签名证书,[参考](https://goharbor.io/docs/2.10.0/install-config/configure-https/),也可以直接设置`values.yaml`中的`expose.tls.certSource=auto`则可以忽略(1)、(2)
 
 ```shell
 D_NAME="harbor-registry"
