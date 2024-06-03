@@ -54,7 +54,7 @@ mountOptions:
   - "nfsvers=4"
 parameters:
   archiveOnDelete: "true"
-  onDelete: "retain"
+  onDelete: "delete"
   pathPattern: "${.PVC.namespace}/${.PVC.annotations.nfs.io/storage-path}"
 ```
 
