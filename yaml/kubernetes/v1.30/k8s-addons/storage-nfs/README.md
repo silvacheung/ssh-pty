@@ -16,7 +16,7 @@ helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/
 # 默认的repository需要替换为:
 # registry.k8s.io/sig-storage/nfs-subdir-external-provisioner --> k8s.nju.edu.cn/sig-storage/nfs-subdir-external-provisioner
 # 不需要创建storageClass时设置'storageClass.create=false'
-helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+helm upgrade --install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
 	--set image.repository=k8s.nju.edu.cn/sig-storage/nfs-subdir-external-provisioner \
 	--set replicaCount=3 \
 	--set nfs.server=192.168.0.100 \

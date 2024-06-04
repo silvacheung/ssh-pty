@@ -10,12 +10,11 @@ helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install metrics-server metrics-server/metrics-server \
   --set image.repository=k8s.nju.edu.cn/metrics-server/metrics-server \
   --set addonResizer.image.repository=k8s.nju.edu.cn/autoscaling/addon-resizer \
-  --set addonResizer.enabled=false \
+  --set addonResizer.enabled=true \
   --set replicas=3 \
   --set metrics.enabled=false \
   --set serviceMonitor.enabled=false \
-  --set args={"--kubelet-insecure-tls"} \
-#  --set args[0]=--kubelet-insecure-tls
+  --set args[0]=--kubelet-insecure-tls
 ```
 
 # 安装 [prometheus](https://artifacthub.io/packages/helm/prometheus-community/prometheus)
@@ -26,7 +25,7 @@ helm upgrade --install metrics-server metrics-server/metrics-server \
 ```shell
 helm repo add jetstack https://charts.jetstack.io
 
-helm install cert-manager jetstack/cert-manager \
+helm upgrade --install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --version v1.14.5 \
