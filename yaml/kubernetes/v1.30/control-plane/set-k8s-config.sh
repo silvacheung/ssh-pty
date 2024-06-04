@@ -157,8 +157,8 @@ nodeRegistration:
     node-ip: "{{ get "host.internal" }}"
     hostname-override: "{{ get "host.hostname" }}"
 
-#skipPhases:
-#- "addon/kube-proxy"
+skipPhases:
+- "addon/kube-proxy"
 
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kube-proxy-config.v1alpha1/
