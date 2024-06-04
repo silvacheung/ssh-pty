@@ -7,6 +7,11 @@ if [ "$(systemctl is-active kubelet)" == "active" ]; then
   exit 0
 fi
 
+# 处理挂载目录中的lost+found目录，最好在挂载的目录的上级创建挂载点，这样可以找回丢失数据
+if [ -e /var/lib/etcd/lost+found ]; then
+  rm -rf /var/lib/etcd/lost+found
+fi
+
 # 初始化
 {{- if eq (get "hosts.0.hostname") (get "host.hostname") }}
 kubeadm init --upload-certs --config /etc/kubernetes/kubeadm-config.yaml --v=5
