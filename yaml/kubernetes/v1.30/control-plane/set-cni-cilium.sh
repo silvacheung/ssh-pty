@@ -45,7 +45,9 @@ cilium install \
   --set k8s.requireIPv4PodCIDR=true \
   --set kubeProxyReplacement=true \
   --set containerRuntime.integration=containerd \
-  --set bandwidthManager.enabled=true
+  --set bandwidthManager.enabled=true \
+  --set bandwidthManager.bbr=true \
+  --set localRedirectPolicy=true
 
 
 echo "滚动更新CoreDNS"
