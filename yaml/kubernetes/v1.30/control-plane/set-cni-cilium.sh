@@ -40,14 +40,19 @@ fi
 
 echo "安装cilium"
 cilium install \
-  --version 1.15.4 \
+  --version 1.15.5 \
   --set ipam.mode=kubernetes \
   --set k8s.requireIPv4PodCIDR=true \
   --set kubeProxyReplacement=true \
   --set containerRuntime.integration=containerd \
   --set bandwidthManager.enabled=true \
   --set bandwidthManager.bbr=true \
-  --set localRedirectPolicy=true
+  --set localRedirectPolicy=true \
+  --set encryption.enabled=true \
+  --set encryption.type=wireguard \
+  --set encryption.wireguard.persistentKeepalive=5s \
+  --set encryption.wireguard.userspaceFallback=true \
+  --set encryption.nodeEncryption=true
 
 
 echo "滚动更新CoreDNS"

@@ -10,8 +10,23 @@ helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install metrics-server metrics-server/metrics-server \
   --set image.repository=k8s.nju.edu.cn/metrics-server/metrics-server \
   --set addonResizer.image.repository=k8s.nju.edu.cn/autoscaling/addon-resizer \
-  --set addonResizer.enabled=true \
   --set replicas=3 \
+  --set revisionHistoryLimit=10 \
+  --set podDisruptionBudget.enabled=true \
+  --set podDisruptionBudget.minAvailable=1 \
+  --set resources.limits.cpu=200m \
+  --set resources.limits.memory=250Mi \
+  --set resources.requests.cpu=100m \
+  --set resources.requests.memory=200Mi \
+  --set addonResizer.enabled=true \
+  --set addonResizer.resources.limits.cpu=200m \
+  --set addonResizer.resources.limits.memory=200Mi \
+  --set addonResizer.resources.requests.cpu=100m \
+  --set addonResizer.resources.requests.memory=100Mi \
+  --set addonResizer.nanny.cpu=100m \
+  --set addonResizer.nanny.extraCPU=10m \
+  --set addonResizer.nanny.memory=100Mi \
+  --set addonResizer.nanny.extraMemory=10Mi \
   --set metrics.enabled=false \
   --set serviceMonitor.enabled=false \
   --set args[0]=--kubelet-insecure-tls
