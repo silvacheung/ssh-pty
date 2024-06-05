@@ -110,7 +110,7 @@ cache:
   expireHours: 24
 
 nginx:
-  replicas: 2
+  replicas: 1
   resources:
     requests:
       memory: 256Mi
