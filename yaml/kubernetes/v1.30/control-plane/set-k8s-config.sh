@@ -239,6 +239,10 @@ maxOpenFiles: 1024000
 failSwapOn: true
 runtimeRequestTimeout: "10m"
 
+#featureGates:
+#  RotateKubeletServerCertificate: "true"
+#  InPlacePodVerticalScaling: "true"
+
 #authorization:
 #  mode: AlwaysAllow
 #  webhook:
