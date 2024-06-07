@@ -4,7 +4,7 @@ expose:
     enabled: true
     certSource: auto
     auto:
-      commonName: ""
+      commonName: "core.harbor.domain"
     secret:
       secretName: "harbor-tls"
   nodePort:
@@ -25,7 +25,7 @@ expose:
     labels:
       kubernetes.io/service-ipam: "cilium.io"
 
-externalURL: https://core.harbor.domain
+externalURL: https://core.harbor.domain:31443
 persistence:
   enabled: true
   resourcePolicy: "keep"
@@ -57,11 +57,11 @@ persistence:
       accessMode: ReadWriteOnce
       size: 5Gi
   imageChartStorage:
-    disableredirect: true
+    disableredirect: false
     type: filesystem
     filesystem:
       rootdirectory: /storage
-      maxthreads: 100
+      maxthreads: 1000
 
 existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
 harborAdminPassword: "Harbor12345"
@@ -77,12 +77,12 @@ ipFamily:
   ipv4:
     enabled: true
 
-imagePullPolicy: IfNotPresent
-imagePullSecrets:
+#imagePullPolicy: IfNotPresent
+#imagePullSecrets:
 #  - name: docker-registry-secret
 #  - name: internal-registry-secret
 
-caSecretName: "harbor-tls"
+#caSecretName: "harbor-tls"
 secretKey: "cg4N8mJ3mVkcjKq7"
 
 metrics:
@@ -110,6 +110,9 @@ cache:
   expireHours: 24
 
 nginx:
+  image:
+    repository: goharbor/nginx-photon
+    tag: v2.10.2
   replicas: 1
   resources:
     requests:
@@ -131,6 +134,9 @@ nginx:
                   - xxx
 
 portal:
+  image:
+    repository: goharbor/harbor-portal
+    tag: v2.10.2
   replicas: 1
   resources:
     requests:
@@ -152,6 +158,9 @@ portal:
                   - xxx
 
 core:
+  image:
+    repository: goharbor/harbor-core
+    tag: v2.10.2
   replicas: 1
   resources:
     requests:
@@ -173,6 +182,9 @@ core:
                   - xxx
 
 jobservice:
+  image:
+    repository: goharbor/harbor-jobservice
+    tag: v2.10.2
   replicas: 1
   resources:
     requests:
@@ -196,11 +208,17 @@ jobservice:
 registry:
   replicas: 1
   registry:
+    image:
+      repository: goharbor/registry-photon
+      tag: v2.10.2
     resources:
       requests:
         memory: 256Mi
         cpu: 100m
   controller:
+    image:
+      repository: goharbor/harbor-registryctl
+      tag: v2.10.2
     resources:
       requests:
         memory: 256Mi
@@ -229,6 +247,9 @@ registry:
     dryrun: false
 
 trivy:
+  image:
+    repository: goharbor/trivy-adapter-photon
+    tag: v2.10.2
   enabled: true
   replicas: 1
   resources:
@@ -256,6 +277,9 @@ trivy:
 database:
   type: internal
   internal:
+    image:
+      repository: goharbor/harbor-db
+      tag: v2.10.2
     resources:
       requests:
         memory: 256Mi
@@ -284,6 +308,9 @@ database:
 redis:
   type: internal
   internal:
+    image:
+      repository: goharbor/redis-photon
+      tag: v2.10.2
     resources:
       requests:
         memory: 256Mi
@@ -299,6 +326,9 @@ redis:
                   - xxx
 
 exporter:
+  image:
+    repository: goharbor/harbor-exporter
+    tag: v2.10.2
   replicas: 1
   resources:
     requests:
