@@ -80,7 +80,7 @@ rm -rf /var/run/haproxy*
 systemctl daemon-reload
 ```
 
-# 需要单独挂盘得目录
+# 需要单独挂盘的目录
 - `/var/lib/containerd`
 - `/var/lib/etcd`
 - `/var/log`

@@ -22,9 +22,7 @@ config:
     node_cidr_mask_size: "24"
     ipvs_exclude_cidr: [ "172.16.0.0/24" ]
     port_range: "0-0"
-    # cluster_dns:
-    #   - "61.139.2.69"
-    #   - "211.137.96.205"
+    cluster_dns: ["61.139.2.69", "211.137.96.205"]
     certificate_key: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
     bootstrap_token: "cb6xll.lo5z8trai8zwzh7t"
     untainted: "control-plane" # "control-plane"
@@ -40,10 +38,9 @@ config:
       docker.io: https://registry.aliyuncs.com
       gcr.io: https://gcr.mirrors.ustc.edu.cn
       quay.io: https://quay.mirrors.ustc.edu.cn
-      #k8s.gcr.io: https://registry.aliyuncs.com/google_containers
       k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
       registry.k8s.io: https://k8s.nju.edu.cn/
-      harbor.local: http://harbor.local
+      harbor.local: https://172.16.67.201:8080
     auths:
       harbor.local:
         username: "username"
