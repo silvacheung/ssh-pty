@@ -12,7 +12,7 @@ config:
       port: "9443"
     # 主节点执行 kubeadm init phase upload-certs --upload-certs --config /etc/kubernetes/kubeadm-config.yaml
     certificate_key: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
-    # 主节点执行 kubeadm token create
+    # 主节点执行 kubeadm token create --description 'kubeadm bootstrap token' --ttl 2h0m0s --usages authentication,signing --groups system:bootstrappers:kubeadm:default-node-token
     bootstrap_token: "cb6xll.lo5z8trai8zwzh7t"
 
   containerd:
