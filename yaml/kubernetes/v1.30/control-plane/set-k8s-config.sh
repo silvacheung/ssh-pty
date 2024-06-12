@@ -58,6 +58,7 @@ apiServer:
     profiling: "false"
     allow-privileged: "true"
     request-timeout: "1m0s"
+    service-node-port-range: {{ get "config.k8s.service_node_port_range" }}
     service-account-lookup: "true"
     enable-aggregator-routing: "true"
     max-requests-inflight: "3000"
@@ -172,8 +173,8 @@ enableProfiling: false
 clusterCIDR: "{{ get "config.k8s.pod_subnet" }}"
 hostnameOverride: "{{ get "host.hostname" }}"
 mode: "ipvs"
-{{- if get "config.k8s.port_range" }}
-portRange: "{{ get "config.k8s.port_range" }}"
+{{- if get "config.k8s.kube_proxy_port_range" }}
+portRange: "{{ get "config.k8s.kube_proxy_port_range" }}"
 {{- else }}
 portRange: "0-0"
 {{- end }}

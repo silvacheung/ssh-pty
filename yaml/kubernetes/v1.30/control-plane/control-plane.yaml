@@ -21,8 +21,9 @@ config:
     pod_subnet: "10.128.0.0/12"
     node_cidr_mask_size: "24"
     ipvs_exclude_cidr: [ "172.16.0.0/24" ]
-    port_range: "0-0"
-    cluster_dns: ["61.139.2.69", "211.137.96.205"]
+    kube_proxy_port_range: "0-0"
+    service_node_port_range: "30000-32767"
+    #cluster_dns: ["61.139.2.69", "211.137.96.205"]
     certificate_key: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
     bootstrap_token: "cb6xll.lo5z8trai8zwzh7t"
     untainted: "control-plane" # "control-plane"
