@@ -51,6 +51,13 @@ networking:
 
 apiServer:
   timeoutForControlPlane: "10m0s"
+  certSANs:
+  - "{{ get "config.k8s.control_plane_endpoint.address" }}"
+  {{- range get "config.k8s.control_plane_endpoint.sans" }}
+  {{- if eq (get "config.k8s.control_plane_endpoint.address") . }}{{- else }}
+  - "{{ . }}"
+  {{- end }}
+  {{- end }}
   extraArgs:
     bind-address: "0.0.0.0"
     authorization-mode: "Node,RBAC"
