@@ -19,7 +19,7 @@ fi
 ionice -c2 -n0 -p $(pgrep etcd)
 
 # 提高etcd对于对等网络流量优先级
-if [ "$(tc qdisc show dev enp3s0 handle 1)" != "" ]; then
+if [ "$(tc qdisc show dev ${NET_IF} handle 1)" != "" ]; then
   tc qdisc del dev ${NET_IF} root handle 1: prio bands 3
 fi
 
