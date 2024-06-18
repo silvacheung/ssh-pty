@@ -64,5 +64,5 @@ fi
 # 安装必要包
 apt update
 apt -y install sudo gnupg ncat selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2 nfs-common ceph-common
-#apt -y upgrade sudo gnupg ncat selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2 nfs-common ceph-common
+apt -y upgrade sudo gnupg ncat selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2 nfs-common ceph-common
 source /etc/profile

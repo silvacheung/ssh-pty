@@ -19,6 +19,8 @@ setenforce 0
 getenforce
 
 # sysctl net
+# net.ipv4.tcp_tw_recycle高版本内核已删除
+# https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=4396e46187ca5070219b81773c4e65088dac50cc
 echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
 echo 'net.bridge.bridge-nf-call-arptables = 1' >> /etc/sysctl.conf
 echo 'net.bridge.bridge-nf-call-ip6tables = 1' >> /etc/sysctl.conf
@@ -49,8 +51,8 @@ echo 'net.ipv4.conf.all.arp_accept = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.default.arp_accept = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.all.arp_ignore = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.conf.default.arp_ignore = 1' >> /etc/sysctl.conf
-echo 'net.core.rmem_max_default = 65536' >> /etc/sysctl.conf
-echo 'net.core.wmem_max_default = 65536' >> /etc/sysctl.conf
+echo 'net.core.rmem_default = 655350' >> /etc/sysctl.conf
+echo 'net.core.wmem_default = 655350' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_syncookies = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_tw_reuse = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_tw_recycle = 0' >> /etc/sysctl.conf
@@ -150,10 +152,9 @@ sed -r -i "s@#{0,}?kernel.watchdog_thresh ?= ?([0-9]{1,})@kernel.watchdog_thresh
 sed -r -i "s@#{0,}?kernel.hung_task_timeout_secs ?= ?([0-9]{1,})@kernel.hung_task_timeout_secs = 5@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?fs.file-max ?= ?([0-9]{1,})@fs.file-max = 1024000@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?fs.nr_open ?= ?([0-9]{1,})@fs.nr_open = 52706963@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.core.rmem_max_default ?= ?([0-9]{1,})@net.core.rmem_max_default = 65536@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.core.wmem_max_default ?= ?([0-9]{1,})@net.core.wmem_max_default = 65536@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.rmem_default ?= ?([0-9]{1,})@net.core.rmem_default = 655350@g" /etc/sysctl.conf
+sed -r -i "s@#{0,}?net.core.wmem_default ?= ?([0-9]{1,})@net.core.wmem_default = 655350@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_syncookies ?= ?([0-9]{1,})@net.ipv4.tcp_syncookies = 1@g" /etc/sysctl.conf
-sed -r -i "s@#{0,}?net.ipv4.tcp_tw_resue ?= ?([0-9]{1,})@net.ipv4.tcp_tw_resue = 1@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_fin_timeout ?= ?([0-9]{1,})@net.ipv4.tcp_fin_timeout = 10@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.ip_local_port_range ?= ?([0-9]{1,} [0-9]{1,}){1,}@net.ipv4.ip_local_port_range = 32768 65000@g" /etc/sysctl.conf
 sed -r -i "s@#{0,}?net.ipv4.tcp_rmem ?= ?([0-9]{1,} [0-9]{1,} [0-9]{1,}){1,}@net.ipv4.tcp_rmem = 4096 87380 67108864@g" /etc/sysctl.conf
@@ -217,10 +218,10 @@ systemctl stop ufw 1>/dev/null 2>/dev/null
 systemctl disable ufw 1>/dev/null 2>/dev/null
 
 # 加载br_netfilter
+mkdir -p /etc/modules-load.d
 modinfo br_netfilter > /dev/null 2>&1
 if [ $? -eq 0 ]; then
    modprobe br_netfilter
-   mkdir -p /etc/modules-load.d
    echo 'br_netfilter' > /etc/modules-load.d/k8s-br_netfilter.conf
 fi
 
@@ -247,10 +248,10 @@ EOF
 # 加载nf_conntrack_ipv4
 modprobe nf_conntrack_ipv4 1>/dev/null 2>/dev/null
 if [ $? -eq 0 ]; then
-   echo 'nf_conntrack_ipv4' > /etc/modules-load.d/kubeproxy-ipvs.conf
+   echo 'nf_conntrack_ipv4' >> /etc/modules-load.d/kubeproxy-ipvs.conf
 else
    modprobe nf_conntrack
-   echo 'nf_conntrack' > /etc/modules-load.d/kubeproxy-ipvs.conf
+   echo 'nf_conntrack' >> /etc/modules-load.d/kubeproxy-ipvs.conf
 fi
 
 # 重新加载/etc/sysctl.conf
