@@ -154,7 +154,7 @@ state = "/run/containerd"
   "io.containerd.timeout.shim.cleanup" = "5s"
   "io.containerd.timeout.shim.load" = "5s"
   "io.containerd.timeout.shim.shutdown" = "3s"
-  "io.containerd.timeout.task.state" = "2s"
+  "io.containerd.timeout.task.state" = "3s"
 
 [plugins]
   [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
@@ -173,31 +173,56 @@ state = "/run/containerd"
       max_conf_num = 1
       conf_template = ""
     [plugins."io.containerd.grpc.v1.cri".registry]
-      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-        {{- if get "config.containerd.mirrors" }}
-        {{- range $key, $value := (get "config.containerd.mirrors") }}
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ $key }}"]
-          endpoint = ["{{ $value }}"{{- if eq $key "docker.io" }}, "https://registry-1.docker.io"{{- end }}]
-        {{- end }}
-        {{ else }}
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-          endpoint = ["https://registry-1.docker.io"]
-        {{- end}}
+      config_path = "/etc/containerd/certs.d"
 
-        {{- if get "config.containerd.auths" }}
-        [plugins."io.containerd.grpc.v1.cri".registry.configs]
-          {{- range $repo, $entry := (get "config.containerd.auths") }}
-          [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ $repo }}".auth]
-            username = "{{ $entry.username }}"
-            password = "{{ $entry.password }}"
-            [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ $repo }}".tls]
-              ca_file = "{{ $entry.ca_file }}"
-              cert_file = "{{ $entry.cert_file }}"
-              key_file = "{{ $entry.key_file}}"
-              insecure_skip_verify = {{ $entry.skip_tls_verify }}
-          {{- end}}
-        {{- end}}
+      {{- range $namespace, $auth := (get "config.containerd.auths") }}
+      [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ $namespace }}".auth]
+        username = "{{- if $auth.username }}{{ $auth.username }}{{- end }}"
+        password = "{{- if $auth.password }}{{ $auth.password }}{{- end }}"
+        auth = "{{- if $auth.auth }}{{ $auth.auth }}{{- end }}"
+        identitytoken = "{{- if $auth.identity_token }}{{ $auth.identity_token }}{{- end }}"
+      {{- end }}
 EOF
+
+#写入containerd的registry配置文件
+{{- range $namespace, $registry := (get "config.containerd.registry") }}
+mkdir -p /etc/containerd/certs.d/{{ $namespace }}
+cat > /etc/containerd/certs.d/{{ $namespace }}/hosts.toml <<EOF
+{{- if $registry.server }}
+server = "{{ $registry.server }}"
+{{- end }}
+{{- if $registry.mirror }}
+[host."{{ $registry.mirror }}"]
+  {{- if $registry.capabilities }}
+  capabilities = [{{- range $idx, $val := $registry.capabilities }}{{- if eq $idx 0 }}"{{ $val }}"{{- else }}, "{{ $val }}"{{- end }}{{- end }}]
+  {{- else }}
+  capabilities = ["pull", "push", "resolve"]
+  {{- end }}
+  {{- if $registry.override_path }}
+  override_path = {{ $registry.override_path }}
+  {{- else }}
+  override_path = false
+  {{- end }}
+  {{- if $registry.skip_tls_verify }}
+  skip_verify = {{ $registry.skip_tls_verify }}
+  {{- else }}
+  skip_verify = false
+  {{- end }}
+  {{- if $registry.ca_file }}
+  ca = ["{{ $registry.ca_file }}"]
+  {{- end }}
+  {{- if or $registry.cert_file $registry.key_file }}
+  client = [["{{- if $registry.cert_file }}{{ $registry.cert_file }}{{- end }}", "{{- if $registry.key_file }}{{ $registry.key_file }}{{- end }}"]]
+  {{- end }}
+  {{- if $registry.headers }}
+  [host."{{ $registry.mirror }}".header]
+    {{- range $key, $values := $registry.headers }}
+    {{ $key }} = [{{- range $idx, $val := $values }}{{- if eq $idx 0 }}"{{ $val }}"{{- else }}, "{{ $val }}"{{- end }}{{- end }}]
+    {{- end }}
+  {{- end }}
+{{- end }}
+EOF
+{{ end }}
 
 #写入containerd单元文件
 echo "写入containerd单元文件"

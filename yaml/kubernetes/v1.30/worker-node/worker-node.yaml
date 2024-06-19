@@ -22,22 +22,45 @@ config:
     cni_version: "1.4.1"
     cri_ctl_version: "1.30.0"
     sand_box_image: "registry.aliyuncs.com/google_containers/pause:3.9"
-    mirrors:
-      docker.io: https://registry.aliyuncs.com
-      gcr.io: https://gcr.mirrors.ustc.edu.cn
-      quay.io: https://quay.mirrors.ustc.edu.cn
-      #k8s.gcr.io: https://registry.aliyuncs.com/google_containers
-      k8s.gcr.io: https://gcr.mirrors.ustc.edu.cn/google-containers/
-      registry.k8s.io: https://k8s.nju.edu.cn
-      harbor.local: http://harbor.local
+    registry:
+      docker.io:
+        server: https://docker.io
+        mirror: https://registry.harbor.core/v2/docker.io
+        override_path: true
+      gcr.io:
+        server: https://gcr.io
+        mirror: https://registry.harbor.core/v2/gcr.io
+        override_path: true
+      quay.io:
+        server: https://quay.io
+        mirror: https://registry.harbor.core/v2/quay.io
+        override_path: true
+      k8s.gcr.io:
+        server: https://k8s.gcr.io
+        mirror: https://registry.harbor.core/v2/k8s.gcr.io
+        override_path: true
+      registry.k8s.io:
+        server: https://registry.k8s.io
+        mirror: https://registry.harbor.core/v2/registry.k8s.io
+        override_path: true
+      registry.harbor.local:
+        server: https://registry.harbor.core
+        mirror: https://172.16.67.100:443
+        capabilities: [pull, push, resolve]
+        override_path: false
+        skip_tls_verify: false
+        ca_file: "ca_file"
+        cert_file: "cert_file"
+        key_file: "key_file"
+        headers:
+          Authorization: ["Basic YWRtaW46MTIzNDU2"]
+          x-custom-0: ["foo", "bar"]
     auths:
-      harbor.local:
+      registry.harbor.core:
         username: "username"
         password: "password"
-        ca_file: ""
-        cert_file: ""
-        key_file: ""
-        skip_tls_verify: true
+        auth: ""
+        identity_token: ""
 
 sftp:
   lwy-cn-cd-tpy-std-1721667201:

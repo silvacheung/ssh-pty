@@ -7,8 +7,10 @@ import (
 	"github.com/silvacheung/ssh-pty/conf"
 	"github.com/silvacheung/ssh-pty/host"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -53,9 +55,18 @@ func (b *Template) Build(ctx context.Context, h host.Runtime, fn func(ctx contex
 
 	// 定义函数
 	funcMap := template.FuncMap{
-		"get": b.config.Get,
-		"has": b.config.IsSet,
-		"not": func(key string) bool { return !b.config.IsSet(key) },
+		"get":        b.config.Get,
+		"key":        b.config.IsSet,
+		"url":        url.Parse,
+		"split":      strings.Split,
+		"trim":       strings.Trim,
+		"trimSpace":  strings.TrimSpace,
+		"trimPrefix": strings.TrimPrefix,
+		"trimSuffix": strings.TrimSuffix,
+		"trimLeft":   strings.TrimLeft,
+		"trimRight":  strings.TrimRight,
+		"hasPrefix":  strings.HasPrefix,
+		"hasSuffix":  strings.HasSuffix,
 	}
 
 	// 渲染模板
