@@ -9,9 +9,9 @@ CONF_DIR="${HOME}/kubernetes"
 
 mkdir -p ${CONF_DIR}
 
-if [ $(kubectl get csr | grep kube-config-admin | awk '{print $1}') == "" ]; then
-
-fi
+kubectl delete CertificateSigningRequest/kube-config-${K8S_USER} > /dev/null 2>&1 || true
+kubectl delete ClusterRoleBinding/kube-config-${K8S_USER} > /dev/null 2>&1 || true
+kubectl delete ClusterRole/kube-config-${K8S_USER} > /dev/null 2>&1 || true
 
 # (1)创建私钥
 openssl genrsa -out ${CONF_DIR}/${K8S_USER}.key 2048
@@ -85,7 +85,7 @@ contexts:
 EOF
 
 # (7)将集群详细信息添加到配置文件中
-kubectl config --kubeconfig=${CONF_DIR}/${K8S_USER}.config set-cluster ${CLUSTER_NAME} --server=https://${CLUSTER_ENDPOINT} --insecure-skip-tls-verify
+kubectl config --kubeconfig=${CONF_DIR}/${K8S_USER}.config set-cluster ${CLUSTER_NAME} --server=https://${CLUSTER_ENDPOINT} --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs
 kubectl config --kubeconfig=${CONF_DIR}/${K8S_USER}.config set-credentials ${K8S_USER} --client-certificate=${CONF_DIR}/${K8S_USER}.crt --client-key=${CONF_DIR}/${K8S_USER}.key --embed-certs=true
 kubectl config --kubeconfig=${CONF_DIR}/${K8S_USER}.config set-context kubernetes-${K8S_USER} --cluster=${CLUSTER_NAME} --namespace=default --user=${K8S_USER}
 kubectl config --kubeconfig=${CONF_DIR}/${K8S_USER}.config use-context kubernetes-${K8S_USER}
