@@ -67,6 +67,7 @@ func (b *Template) Build(ctx context.Context, h host.Runtime, fn func(ctx contex
 		"trimRight":  strings.TrimRight,
 		"hasPrefix":  strings.HasPrefix,
 		"hasSuffix":  strings.HasSuffix,
+		"contains":   strings.Contains,
 	}
 
 	// 渲染模板

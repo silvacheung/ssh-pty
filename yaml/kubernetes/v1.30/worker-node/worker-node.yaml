@@ -25,30 +25,40 @@ config:
     registry:
       docker.io:
         server: https://docker.io
-        mirror: https://registry.harbor.core/v2/docker.io
+        mirror: https://<harbor>/v2/docker.io
+        capabilities: [pull, resolve]
         override_path: true
+        skip_tls_verify: true
       gcr.io:
         server: https://gcr.io
-        mirror: https://registry.harbor.core/v2/gcr.io
+        mirror: https://<harbor>/v2/gcr.io
+        capabilities: [pull, resolve]
         override_path: true
+        skip_tls_verify: true
       quay.io:
         server: https://quay.io
-        mirror: https://registry.harbor.core/v2/quay.io
+        mirror: https://<harbor>/v2/quay.io
+        capabilities: [pull, resolve]
         override_path: true
+        skip_tls_verify: true
       k8s.gcr.io:
         server: https://k8s.gcr.io
-        mirror: https://registry.harbor.core/v2/k8s.gcr.io
+        mirror: https://<harbor>/v2/k8s.gcr.io
+        capabilities: [pull, resolve]
         override_path: true
+        skip_tls_verify: true
       registry.k8s.io:
         server: https://registry.k8s.io
-        mirror: https://registry.harbor.core/v2/registry.k8s.io
+        mirror: https://<harbor>/v2/registry.k8s.io
+        capabilities: [pull, resolve]
         override_path: true
-      registry.harbor.local:
-        server: https://registry.harbor.core
-        mirror: https://172.16.67.100:443
+        skip_tls_verify: true
+      registry.harbor.cluster:
+        server: https://<harbor>
+        mirror: https://<harbor>
         capabilities: [pull, push, resolve]
         override_path: false
-        skip_tls_verify: false
+        skip_tls_verify: true
         ca_file: "ca_file"
         cert_file: "cert_file"
         key_file: "key_file"
@@ -56,7 +66,8 @@ config:
           Authorization: ["Basic YWRtaW46MTIzNDU2"]
           x-custom-0: ["foo", "bar"]
     auths:
-      registry.harbor.core:
+      # 如果是mirror需要auth则必须配置mirror的host(ip:port/domain:port)
+      <harbor>:
         username: "username"
         password: "password"
         auth: ""
