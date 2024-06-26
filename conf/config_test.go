@@ -2,6 +2,9 @@ package conf
 
 import (
 	"bytes"
+	"fmt"
+	"net/url"
+	"strings"
 	"testing"
 	"text/template"
 )
@@ -13,9 +16,20 @@ func TestConfig(t *testing.T) {
 	}
 
 	tpl := template.New("test").Funcs(map[string]any{
-		"get": config.Get,
-		"has": config.IsSet,
-		"not": func(key string) bool { return !config.IsSet(key) },
+		"get":        config.Get,
+		"key":        config.IsSet,
+		"url":        url.Parse,
+		"split":      strings.Split,
+		"trim":       strings.Trim,
+		"trimSpace":  strings.TrimSpace,
+		"trimPrefix": strings.TrimPrefix,
+		"trimSuffix": strings.TrimSuffix,
+		"trimLeft":   strings.TrimLeft,
+		"trimRight":  strings.TrimRight,
+		"hasPrefix":  strings.HasPrefix,
+		"hasSuffix":  strings.HasSuffix,
+		"contains":   strings.Contains,
+		"replace":    strings.Replace,
 	})
 
 	tpl, err = tpl.Parse(``)
@@ -29,5 +43,5 @@ func TestConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Logf(buf.String())
+	fmt.Print(buf.String())
 }

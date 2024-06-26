@@ -61,7 +61,7 @@ apiServer:
   extraArgs:
     bind-address: "0.0.0.0"
     authorization-mode: "Node,RBAC"
-    enable-admission-plugins: "AlwaysPullImages,ServiceAccount,NamespaceLifecycle,NodeRestriction,LimitRanger,ResourceQuota,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,PodNodeSelector,PodSecurity"
+    enable-admission-plugins: "ServiceAccount,NamespaceLifecycle,NodeRestriction,LimitRanger,ResourceQuota,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,PodNodeSelector,PodSecurity"
     profiling: "false"
     allow-privileged: "true"
     request-timeout: "1m0s"

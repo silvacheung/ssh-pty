@@ -184,41 +184,41 @@ state = "/run/containerd"
       {{- end }}
 EOF
 
-#写入containerd的registry配置文件
-{{- range $namespace, $registry := (get "config.containerd.registry") }}
+#写入containerd的certs_d配置文件
+{{- range $namespace, $registry := (get "config.containerd.certs_d") }}
 mkdir -p /etc/containerd/certs.d/{{ $namespace }}
 cat > /etc/containerd/certs.d/{{ $namespace }}/hosts.toml <<EOF
 {{- if $registry.server }}
 server = "{{ $registry.server }}"
 {{- end }}
-{{- if $registry.mirror }}
-[host."{{ $registry.mirror }}"]
-  {{- if $registry.capabilities }}
-  capabilities = [{{- range $idx, $val := $registry.capabilities }}{{- if eq $idx 0 }}"{{ $val }}"{{- else }}, "{{ $val }}"{{- end }}{{- end }}]
+{{- range $registry.mirror }}
+[host."{{ .address }}"]
+  {{- if .capabilities }}
+  capabilities = [{{- range $idx, $val := .capabilities }}{{- if eq $idx 0 }}"{{ $val }}"{{- else }}, "{{ $val }}"{{- end }}{{- end }}]
   {{- else }}
   capabilities = ["pull", "push", "resolve"]
   {{- end }}
-  {{- if $registry.override_path }}
-  override_path = {{ $registry.override_path }}
+  {{- if .override_path }}
+  override_path = {{ .override_path }}
   {{- else }}
   override_path = false
   {{- end }}
-  {{- if $registry.skip_tls_verify }}
-  skip_verify = {{ $registry.skip_tls_verify }}
+  {{- if .skip_tls_verify }}
+  skip_verify = {{ .skip_tls_verify }}
   {{- else }}
   skip_verify = false
   {{- end }}
-  {{- if $registry.ca_file }}
-  ca = ["{{ $registry.ca_file }}"]
+  {{- if .ca_file }}
+  ca = ["{{ .ca_file }}"]
   {{- end }}
-  {{- if or $registry.cert_file $registry.key_file }}
-  client = [["{{- if $registry.cert_file }}{{ $registry.cert_file }}{{- end }}", "{{- if $registry.key_file }}{{ $registry.key_file }}{{- end }}"]]
+  {{- if or .cert_file .key_file }}
+  client = [["{{- if .cert_file }}{{ .cert_file }}{{- end }}", "{{- if .key_file }}{{ .key_file }}{{- end }}"]]
   {{- end }}
-  {{- if $registry.headers }}
-  [host."{{ $registry.mirror }}".header]
-    {{- range $key, $values := $registry.headers }}
-    {{ $key }} = [{{- range $idx, $val := $values }}{{- if eq $idx 0 }}"{{ $val }}"{{- else }}, "{{ $val }}"{{- end }}{{- end }}]
-    {{- end }}
+{{- end }}
+{{- range $key, $values := $registry.header }}
+[host."{{ $key }}".header]
+  {{- range $values }}
+  {{ . }}
   {{- end }}
 {{- end }}
 EOF
