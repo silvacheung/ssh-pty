@@ -108,13 +108,10 @@ config:
 sftp:
   lwy-cn-cd-tpy-std-1721667201:
     - F:\cri\
-    - F:\cni\
   lwy-cn-cd-tpy-std-1721667202:
     - F:\cri\
-    - F:\cni\
   lwy-cn-cd-tpy-std-1721667203:
     - F:\cri\
-    - F:\cni\
 
 await:
   lwy-cn-cd-tpy-std-1721667202:
@@ -140,5 +137,7 @@ script:
   - yaml/kubernetes/v1.30/control-plane/set-k8s-audit.sh
   - yaml/kubernetes/v1.30/control-plane/set-k8s-boot.sh
   - yaml/kubernetes/v1.30/control-plane/set-k8s-security.sh
-  - yaml/kubernetes/v1.30/control-plane/set-cni-cilium.sh
   - yaml/kubernetes/v1.30/control-plane/set-k8s-optimize.sh
+  - yaml/kubernetes/v1.30/control-plane/set-pkg-helm.sh
+  - yaml/kubernetes/v1.30/control-plane/set-cni-cilium.sh
+  - yaml/kubernetes/v1.30/control-plane/set-final-echo.sh

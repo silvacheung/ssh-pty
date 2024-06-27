@@ -113,3 +113,4 @@ script:
   - yaml/kubernetes/v1.30/worker-node/set-k8s-audit.sh
   - yaml/kubernetes/v1.30/worker-node/set-k8s-boot.sh
   - yaml/kubernetes/v1.30/worker-node/set-k8s-security.sh
+  - yaml/kubernetes/v1.30/worker-node/set-final-echo.sh

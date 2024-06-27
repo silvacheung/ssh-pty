@@ -1,0 +1,52 @@
+hosts:
+  - { hostname: lwy-cn-cd-tpy-std-1721667103, address: 172.16.67.103, internal: 172.16.67.103, port: 22, username: root, password: cgm123., workdir: /root/k8s, private_key: "", passphrase: "" }
+
+config:
+  metrics-server:
+    enable: true
+    replicas: 3
+
+  nfs:
+    enable: true
+    server: 172.16.67.253
+    path: /mnt/nas-data/k8s-nfs
+    storage_class_name: nfs-subdir-external
+    replicas: 3
+
+  cert-manager:
+    enable: true
+    replicas: 3
+
+  prometheus-stack:
+    enable: true
+    kube_version_override: 1.30.0
+    grafana_admin_password: gfa@12345
+    storage_class_name: nfs-subdir-external
+
+  harbor:
+    enable: true
+    node_port_http: 30080
+    node_port_https: 30443
+    external_url: https://localhost:30443
+    admin_password: Harbor12345
+    storage_class_name: nfs-subdir-external
+    storage_size:
+      registry: 5Gi
+      job_service: 5Gi
+      database: 5Gi
+      redis: 5Gi
+      trivy: 5Gi
+
+  ipam-gateway:
+    enable: true
+    nodes:
+      -
+
+
+script:
+  - yaml/kubernetes/v1.30/k8s-addons/x-metrics-server.sh
+  - yaml/kubernetes/v1.30/k8s-addons/x-storage-nfs.sh
+  - yaml/kubernetes/v1.30/k8s-addons/x-cert-manager.sh
+  - yaml/kubernetes/v1.30/k8s-addons/x-prometheus-stack.sh
+  - yaml/kubernetes/v1.30/k8s-addons/x-registry-harbor.sh
+  - yaml/kubernetes/v1.30/k8s-addons/x-final-echo.sh
