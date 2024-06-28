@@ -10,8 +10,9 @@ echo "安装Metrics-Server"
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 
 helm upgrade --install metrics-server metrics-server/metrics-server \
-  --set image.repository=harbor.silvacheung.com/registry.k8s.io/metrics-server/metrics-server \
-  --set addonResizer.image.repository=harbor.silvacheung.com/registry.k8s.io/autoscaling/addon-resizer \
+  --version {{ get "config.metrics-server.version" }} \
+  --set image.repository=registry.k8s.io/metrics-server/metrics-server \
+  --set addonResizer.image.repository=registry.k8s.io/autoscaling/addon-resizer \
   --set replicas={{ get "config.metrics-server.replicas" }} \
   --set revisionHistoryLimit=10 \
   --set podDisruptionBudget.enabled=true \
@@ -30,5 +31,5 @@ helm upgrade --install metrics-server metrics-server/metrics-server \
   --set addonResizer.nanny.memory=50Mi \
   --set addonResizer.nanny.extraMemory=10Mi \
   --set metrics.enabled=false \
-  --set serviceMonitor.enabled=false \
+  --set serviceMonitor.enabled={{ get "config.metrics-server.service_monitor" }} \
   --set args[0]=--kubelet-insecure-tls

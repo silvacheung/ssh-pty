@@ -43,7 +43,7 @@ config:
           - address: https://harbor.silvacheung.com/v2/docker.io
             capabilities: [ pull, resolve ]
             override_path: true
-            skip_tls_verify: true
+            skip_tls_verify: false
         header:
           https://harbor.silvacheung.com:
             - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]
@@ -53,7 +53,7 @@ config:
           - address: https://harbor.silvacheung.com/v2/quay.io
             capabilities: [ pull, resolve ]
             override_path: true
-            skip_tls_verify: true
+            skip_tls_verify: false
         header:
           https://harbor.silvacheung.com:
             - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]
@@ -63,7 +63,7 @@ config:
           - address: https://harbor.silvacheung.com/v2/gcr.io
             capabilities: [ pull, resolve ]
             override_path: true
-            skip_tls_verify: true
+            skip_tls_verify: false
         header:
           https://harbor.silvacheung.com:
             - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]
@@ -73,7 +73,17 @@ config:
           - address: https://harbor.silvacheung.com/v2/k8s.gcr.io
             capabilities: [ pull, resolve ]
             override_path: true
-            skip_tls_verify: true
+            skip_tls_verify: false
+        header:
+          https://harbor.silvacheung.com:
+            - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]
+      ghcr.io:
+        server: https://ghcr.io
+        mirror:
+          - address: https://harbor.silvacheung.com/v2/ghcr.io
+            capabilities: [ pull, resolve ]
+            override_path: true
+            skip_tls_verify: false
         header:
           https://harbor.silvacheung.com:
             - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]
@@ -83,17 +93,17 @@ config:
           - address: https://harbor.silvacheung.com/v2/registry.k8s.io
             capabilities: [ pull, resolve ]
             override_path: true
-            skip_tls_verify: true
+            skip_tls_verify: false
         header:
           https://harbor.silvacheung.com:
             - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]
-      registry.cluster:
+      registry.k8s.cluster:
         server: https://harbor.silvacheung.com
         mirror:
-          - address: https://harbor.silvacheung.com/v2/registry.cluster
-            capabilities: [ pull, resolve ]
+          - address: https://harbor.silvacheung.com/v2/registry.k8s.cluster
+            capabilities: [ pull, push, resolve ]
             override_path: true
-            skip_tls_verify: true
+            skip_tls_verify: false
         header:
           https://harbor.silvacheung.com:
             - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]

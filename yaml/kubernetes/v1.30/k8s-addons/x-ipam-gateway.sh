@@ -49,11 +49,11 @@ subjects:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: secret-harbor
+  name: ipam-gateway-registry
   namespace: ipam-gateway
 type: kubernetes.io/dockerconfigjson
 data:
-  .dockerconfigjson: eyJhdXRocyI6eyJyZWcuZHFjcGNpZGMuY246ODQ0MyI6eyJ1c2VybmFtZSI6ImRxYWRtaW4iLCJwYXNzd29yZCI6ImVlNGdGejROcG01bU5ZWiJ9fX0K
+  .dockerconfigjson: $(echo '{"auths":{"{{ get "config.ipam-gateway.registry" }}":{"username":"{{ get "config.ipam-gateway.registry_username" }}","password":"{{ get "config.ipam-gateway.registry_password" }}"}}}' | base64 -w 0)
 
 ---
 apiVersion: "cilium.io/v2alpha1"
@@ -62,7 +62,7 @@ metadata:
   name: "ipam-svc"
 spec:
   blocks:
-    - cidr: "20.10.0.0/16"
+    - cidr: "{{ get "config.ipam-gateway.ip_cidr" }}"
   serviceSelector:
     matchLabels:
       "kubernetes.io/service-ipam": "cilium.io"
@@ -112,7 +112,7 @@ metadata:
   name: ipam-gateway
   namespace: ipam-gateway
 spec:
-  replicas: 1
+  replicas: {{ if gt (len (get "config.ipam-gateway.nodes")) 0 }}{{ len (get "config.ipam-gateway.nodes") }}{{ else }}1{{ end }}
   selector:
     matchLabels:
       app: ipam-gateway
@@ -130,6 +130,7 @@ spec:
           labelSelector:
             matchLabels:
               app: ipam-gateway
+      {{- if gt (len (get "config.ipam-gateway.nodes")) 0 }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -138,23 +139,26 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-                      - <node-hostname>
+                      {{- range (get "config.ipam-gateway.nodes") }}
+                      - {{ . }}
+                      {{- end }}
+      {{- end }}
       hostNetwork: true
       shareProcessNamespace: true
       serviceAccountName: ipam-gateway-sa
       imagePullSecrets:
-        - name: secret-harbor
+        - name: ipam-gateway-registry
       containers:
-        - image: reg.dqcpcidc.cn:8443/docker.io/nginx:1.27-alpine
+        - image: nginx:1.27.0-alpine
           name: ipam-svc-nginx
           imagePullPolicy: IfNotPresent
           resources:
             requests:
-              cpu: "200m"
-              memory: "500Mi"
+              cpu: "100m"
+              memory: "100Mi"
             limits:
               cpu: "500m"
-              memory: "1Gi"
+              memory: "500Mi"
           volumeMounts:
             - name: nginx-conf
               mountPath: /etc/nginx/nginx.conf
@@ -164,16 +168,16 @@ spec:
               mountPath: /etc/nginx/conf.d/http
             - name: nginx-stream-conf-dir
               mountPath: /etc/nginx/conf.d/stream
-        - image: reg.dqcpcidc.cn:8443/ipam-gateway/ipam-svc-controller:20240529.6
+        - image: {{ get "config.ipam-gateway.registry" }}/{{ get "config.ipam-gateway.repository" }}
           name: ipam-svc-controller
           imagePullPolicy: IfNotPresent
           resources:
             requests:
-              cpu: "200m"
-              memory: "100Mi"
+              cpu: "50m"
+              memory: "50Mi"
             limits:
-              cpu: "500m"
-              memory: "200Mi"
+              cpu: "100m"
+              memory: "100Mi"
           volumeMounts:
             - name: nginx-http-conf-dir
               mountPath: /etc/nginx/conf.d/http

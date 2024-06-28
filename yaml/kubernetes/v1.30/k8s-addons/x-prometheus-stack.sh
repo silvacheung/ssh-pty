@@ -10,12 +10,13 @@ echo "安装Prometheus-Stack"
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 
 helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+  --version {{ get "config.prometheus-stack.version" }} \
   --create-namespace \
   --namespace prometheus-stack \
   --set kubeTargetVersionOverride={{ get "config.prometheus-stack.kube_version_override" }} \
   --set namespaceOverride=prometheus-stack \
-  --set kube-state-metrics.image.registry=harbor.silvacheung.com/registry.k8s.io \
-  --set prometheusOperator.admissionWebhooks.patch.image.registry=harbor.silvacheung.com/registry.k8s.io \
+  --set kube-state-metrics.image.registry=registry.k8s.io \
+  --set prometheusOperator.admissionWebhooks.patch.image.registry=registry.k8s.io \
   --set prometheusOperator.admissionWebhooks.certManager.enabled=true \
   --set prometheusOperator.admissionWebhooks.certManager.rootCert.duration=87840h0m0s \
   --set prometheusOperator.admissionWebhooks.certManager.admissionCert.duration=87840h0m0s \

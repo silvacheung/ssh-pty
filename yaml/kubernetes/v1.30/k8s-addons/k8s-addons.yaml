@@ -4,49 +4,59 @@ hosts:
 config:
   metrics-server:
     enable: true
+    version: 3.12.1
     replicas: 3
+    service_monitor: true
 
   nfs:
     enable: true
+    version:  4.0.18
+    nfsvers: 4
     server: 172.16.67.253
     path: /mnt/nas-data/k8s-nfs
-    storage_class_name: nfs-subdir-external
     replicas: 3
 
   cert-manager:
     enable: true
+    version: v1.15.1
     replicas: 3
 
   prometheus-stack:
     enable: true
+    version: 60.4.0
     kube_version_override: 1.30.0
     grafana_admin_password: gfa@12345
     storage_class_name: nfs-subdir-external
 
   harbor:
     enable: true
+    version: 1.15.0
     node_port_http: 30080
     node_port_https: 30443
     external_url: https://localhost:30443
     admin_password: Harbor12345
     storage_class_name: nfs-subdir-external
-    storage_size:
-      registry: 5Gi
-      job_service: 5Gi
-      database: 5Gi
-      redis: 5Gi
-      trivy: 5Gi
+    storage_size_registry: 5Gi
+    storage_size_job_service: 5Gi
+    storage_size_database: 5Gi
+    storage_size_redis: 5Gi
+    storage_size_trivy: 5Gi
+    service_monitor: true
 
   ipam-gateway:
     enable: true
-    nodes:
-      -
-
+    ip_cidr: 20.10.0.0/16
+    registry: example.com
+    repository: ipam-gateway/ipam-svc-controller:20240529.6
+    registry_username: admin
+    registry_password: 123456
+    nodes: []
 
 script:
-  - yaml/kubernetes/v1.30/k8s-addons/x-metrics-server.sh
+  - yaml/kubernetes/v1.30/k8s-addons/x-ipam-gateway.sh
   - yaml/kubernetes/v1.30/k8s-addons/x-storage-nfs.sh
   - yaml/kubernetes/v1.30/k8s-addons/x-cert-manager.sh
   - yaml/kubernetes/v1.30/k8s-addons/x-prometheus-stack.sh
+  - yaml/kubernetes/v1.30/k8s-addons/x-metrics-server.sh
   - yaml/kubernetes/v1.30/k8s-addons/x-registry-harbor.sh
   - yaml/kubernetes/v1.30/k8s-addons/x-final-echo.sh
