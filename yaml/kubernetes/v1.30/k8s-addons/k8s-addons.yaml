@@ -6,7 +6,7 @@ config:
     enable: true
     version: 3.12.1
     replicas: 3
-    service_monitor: true
+    service_monitor: false
 
   nfs:
     enable: true
@@ -41,7 +41,7 @@ config:
     storage_size_database: 5Gi
     storage_size_redis: 5Gi
     storage_size_trivy: 5Gi
-    service_monitor: true
+    service_monitor: false
 
   ipam-gateway:
     enable: true
