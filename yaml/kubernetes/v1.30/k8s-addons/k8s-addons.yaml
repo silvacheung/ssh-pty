@@ -47,7 +47,7 @@ config:
     enable: true
     ip_cidr: 20.10.0.0/16
     registry: example.com
-    repository: ipam-gateway/ipam-svc-controller:20240529.6
+    repository: ipam-gateway/ipam-svc-controller:1.0.0
     registry_username: admin
     registry_password: 123456
     nodes: []
