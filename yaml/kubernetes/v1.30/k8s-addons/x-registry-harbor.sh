@@ -7,7 +7,7 @@ exit 0
 {{- end }}
 
 echo "安装Harbor"
-helm repo add harbor https://helm.goharbor.io
+helm repo add harbor {{ if get "config.harbor.repo" }}{{ get "config.harbor.repo" }}{{ else }}https://helm.goharbor.io{{ end }} {{ if get "config.harbor.username" }}--username {{ get "config.harbor.username" }}{{ end }} {{ if get "config.harbor.password" }}--password {{ get "config.harbor.password" }}{{ end }}
 
 helm upgrade --install harbor-registry harbor/harbor \
   --version {{ get "config.harbor.version" }} \

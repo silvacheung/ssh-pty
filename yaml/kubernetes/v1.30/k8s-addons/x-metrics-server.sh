@@ -7,7 +7,7 @@ exit 0
 {{- end }}
 
 echo "安装Metrics-Server"
-helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+helm repo add metrics-server {{ if get "config.metrics-server.repo" }}{{ get "config.metrics-server.repo" }}{{ else }}https://kubernetes-sigs.github.io/metrics-server/{{ end }} {{ if get "config.metrics-server.username" }}--username {{ get "config.metrics-server.username" }}{{ end }} {{ if get "config.metrics-server.password" }}--password {{ get "config.metrics-server.password" }}{{ end }}
 
 helm upgrade --install metrics-server metrics-server/metrics-server \
   --version {{ get "config.metrics-server.version" }} \

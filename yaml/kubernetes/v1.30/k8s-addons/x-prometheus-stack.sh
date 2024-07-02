@@ -7,7 +7,7 @@ exit 0
 {{- end }}
 
 echo "安装Prometheus-Stack"
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add prometheus-community {{ if get "config.prometheus-stack.repo" }}{{ get "config.prometheus-stack.repo" }}{{ else }}https://prometheus-community.github.io/helm-charts{{ end }} {{ if get "config.prometheus-stack.username" }}--username {{ get "config.prometheus-stack.username" }}{{ end }} {{ if get "config.prometheus-stack.password" }}--password {{ get "config.prometheus-stack.password" }}{{ end }}
 
 helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   --version {{ get "config.prometheus-stack.version" }} \

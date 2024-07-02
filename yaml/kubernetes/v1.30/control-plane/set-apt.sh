@@ -21,6 +21,11 @@ set -e
 
 APT_MIRROR="http://mirrors.ustc.edu.cn"
 
+mkdir -p /etc/apt/auth.conf.d
+cat > /etc/apt/auth.conf.d/auth.conf << EOF
+machine example.org login admin password 123456
+EOF
+
 if [ -f /etc/apt/sources.list ]; then
   if [ ! -f /etc/apt/sources.list.bak ]; then
     cp /etc/apt/sources.list /etc/apt/sources.list.bak

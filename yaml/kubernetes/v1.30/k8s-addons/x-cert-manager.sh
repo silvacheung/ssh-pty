@@ -7,7 +7,7 @@ exit 0
 {{- end }}
 
 echo "安装Cert-Manager"
-helm repo add jetstack https://charts.jetstack.io --force-update
+helm repo add jetstack {{ if get "config.cert-manager.repo" }}{{ get "config.cert-manager.repo" }}{{ else }}https://charts.jetstack.io{{ end }} --force-update {{ if get "config.cert-manager.username" }}--username {{ get "config.cert-manager.username" }}{{ end }} {{ if get "config.cert-manager.password" }}--password {{ get "config.cert-manager.password" }}{{ end }}
 
 helm upgrade --install cert-manager jetstack/cert-manager \
   --namespace cert-manager \

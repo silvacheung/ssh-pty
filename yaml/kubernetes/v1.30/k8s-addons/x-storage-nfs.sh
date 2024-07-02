@@ -7,7 +7,7 @@ exit 0
 {{- end }}
 
 echo "安装NFS"
-helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+helm repo add nfs-subdir-external-provisioner {{ if get "config.nfs.repo" }}{{ get "config.nfs.repo" }}{{ else }}https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/{{ end }} {{ if get "config.nfs.username" }}--username {{ get "config.nfs.username" }}{{ end }} {{ if get "config.nfs.password" }}--password {{ get "config.nfs.password" }}{{ end }}
 
 helm upgrade --install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
   --version {{ get "config.nfs.version" }} \

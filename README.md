@@ -16,6 +16,13 @@ sed -i 's/http[^*]*\/debian-security/http\:\/\/mirrors\.ustc\.edu\.cn\/debian-se
 sed -i 's/http[^*]*\/debian/http\:\/\/mirrors\.ustc\.edu\.cn\/debian/g' /etc/apt/sources.list
 ```
 
+# 镜像源[仓库授权](https://manpages.debian.org/testing/apt/apt_auth.conf.5.en.html)
+```shell
+cat > /etc/apt/auth.conf.d/auth.conf << EOF
+machine example.org login admin password 123456
+EOF
+```
+
 # 重置集群
 ```shell
 # k8s reset
