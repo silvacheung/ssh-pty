@@ -2,7 +2,7 @@
 
 set -e
 
-{{- if get "config.prometheus-stack.enable" }}{{- else }}
+{{- if ne (get "config.prometheus-stack.enable") true }}
 exit 0
 {{- end }}
 

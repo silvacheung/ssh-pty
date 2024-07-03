@@ -2,7 +2,9 @@
 
 set -e
 
-{{- if eq (get "config.k8s.control_plane_endpoint.balancer") "" }}
+{{- if ne (get "config.k8s.control_plane_endpoint.balancer") "" }}
+exit 0
+{{- end }}
 
 # 创建目录
 mkdir -p /etc/haproxy
@@ -150,5 +152,3 @@ curl -sfk --max-time 3 https://localhost:{{ get "config.k8s.control_plane_endpoi
 EOF
 
 chmod +x /etc/keepalived/check-api-server.sh
-
-{{- end }}

@@ -2,7 +2,7 @@
 
 set -e
 
-{{- if get "config.cert-manager.enable" }}{{- else }}
+{{- if ne (get "config.cert-manager.enable") true }}
 exit 0
 {{- end }}
 

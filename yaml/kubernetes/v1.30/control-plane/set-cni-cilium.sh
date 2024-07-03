@@ -2,7 +2,7 @@
 
 set -e
 
-{{- if eq (get "hosts.0.hostname") (get "host.hostname") }}{{- else }}
+{{- if ne (get "hosts.0.hostname") (get "host.hostname") }}
 exit 0
 {{- end }}
 
@@ -25,12 +25,12 @@ helm upgrade --install cilium cilium/cilium \
   --set encryption.wireguard.persistentKeepalive=5s \
   --set encryption.wireguard.userspaceFallback=true \
   --set encryption.nodeEncryption=false \
-  --set hubble.enabled=true \
-  --set hubble.relay.enabled=true \
+  --set hubble.enabled=false \
+  --set hubble.relay.enabled=false \
   --set hubble.relay.replicas=3 \
-  --set hubble.tls.auto.enabled=true \
+  --set hubble.tls.auto.enabled=false \
   --set hubble.tls.auto.method=cronJob \
-  --set hubble.ui.enabled=true \
+  --set hubble.ui.enabled=false \
   --set hubble.ui.replicas=1
 
 echo "滚动更新CoreDNS"

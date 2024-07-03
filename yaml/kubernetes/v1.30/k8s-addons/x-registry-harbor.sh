@@ -2,7 +2,7 @@
 
 set -e
 
-{{- if get "config.harbor.enable" }}{{- else }}
+{{- if ne (get "config.harbor.enable") true }}
 exit 0
 {{- end }}
 

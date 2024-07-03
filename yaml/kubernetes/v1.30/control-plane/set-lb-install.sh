@@ -2,7 +2,9 @@
 
 set -e
 
-{{- if eq (get "config.k8s.control_plane_endpoint.balancer") "" }}
+{{- if ne (get "config.k8s.control_plane_endpoint.balancer") "" }}
+exit
+{{- end }}
 
 # 重命名配置文件(否则haproxy安装将阻塞确认配置文件)
 if [ -f /etc/haproxy/haproxy.cfg ]; then
@@ -62,5 +64,3 @@ else
 	echo "LB Not Running"
 	exit 1
 fi
-
-{{- end }}

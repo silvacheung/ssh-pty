@@ -2,7 +2,7 @@
 
 set -e
 
-{{- if get "config.metrics-server.enable" }}{{- else }}
+{{- if ne (get "config.metrics-server.enable") true }}
 exit 0
 {{- end }}
 

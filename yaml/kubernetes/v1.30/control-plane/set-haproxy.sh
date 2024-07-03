@@ -2,7 +2,9 @@
 
 set -e
 
-{{- if eq (get "config.k8s.control_plane_endpoint.balancer") "haproxy" }}
+{{- if ne (get "config.k8s.control_plane_endpoint.balancer") "haproxy" }}
+exit 0
+{{- end }}
 
 mkdir -p /etc/haproxy
 mkdir -p /etc/keepalived
@@ -211,4 +213,3 @@ spec:
     hostPath:
       path: /etc/keepalived/check-api-server.sh
 EOF
-{{- end }}

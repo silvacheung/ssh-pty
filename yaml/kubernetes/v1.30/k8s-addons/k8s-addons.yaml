@@ -1,35 +1,36 @@
 hosts:
-  - { hostname: lwy-cn-cd-tpy-std-1721667103, address: 172.16.67.103, internal: 172.16.67.103, port: 22, username: root, password: cgm123., workdir: /root/k8s, private_key: "", passphrase: "" }
+  - { hostname: lwy-cn-cd-tpy-std-172166771, address: 172.16.67.71, internal: 172.16.67.71, port: 22, username: root, password: cgm123., workdir: /root/k8s, private_key: "", passphrase: "" }
 
 config:
   metrics-server:
-    enable: true
+    enable: false
     version: 3.12.1
     replicas: 3
     service_monitor: false
 
   nfs:
-    enable: true
+    enable: false
     version:  4.0.18
-    nfsvers: 4
     server: 172.16.67.253
     path: /mnt/nas-data/k8s-nfs
     replicas: 3
+    mnt_options:
+      - nfsvers=4
 
   cert-manager:
-    enable: true
+    enable: false
     version: v1.15.1
     replicas: 3
 
   prometheus-stack:
-    enable: true
+    enable: false
     version: 60.4.0
     kube_version_override: 1.30.0
     grafana_admin_password: gfa@12345
     storage_class_name: nfs-subdir-external
 
   harbor:
-    enable: true
+    enable: false
     version: 1.15.0
     node_port_http: 30080
     node_port_https: 30443
@@ -44,7 +45,7 @@ config:
     service_monitor: false
 
   ipam-gateway:
-    enable: true
+    enable: false
     ip_cidr: 20.10.0.0/16
     registry: example.com
     repository: ipam-gateway/ipam-svc-controller:1.0.0

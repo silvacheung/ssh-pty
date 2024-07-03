@@ -2,7 +2,7 @@
 
 set -e
 
-{{- if get "config.nfs.enable" }}{{- else }}
+{{- if ne (get "config.nfs.enable") true }}
 exit 0
 {{- end }}
 
@@ -17,6 +17,9 @@ helm upgrade --install nfs-subdir-external-provisioner nfs-subdir-external-provi
 	--set nfs.path={{ get "config.nfs.path" }} \
 	--set nfs.volumeName=nfs-mnt-data \
 	--set nfs.reclaimPolicy=Delete \
+  {{ range $idx, $val := (get "config.nfs.mnt_options") -}}
+  --set nfs.mountOptions[{{ $idx }}]={{ $val }} \
+  {{ end -}}
 	--set strategyType=Recreate \
 	--set storageClass.create=true \
 	--set storageClass.name=nfs-subdir-external \
@@ -29,6 +32,5 @@ helm upgrade --install nfs-subdir-external-provisioner nfs-subdir-external-provi
 	--set resources.limits.cpu=200m \
 	--set resources.limits.memory=200Mi \
 	--set resources.requests.cpu=50m \
-	--set resources.requests.memory=50Mi \
-	--set nfs.mountOptions[0]=nfsvers={{ get "config.nfs.nfsvers" }}
+	--set resources.requests.memory=50Mi
 

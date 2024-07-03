@@ -2,7 +2,9 @@
 
 set -e
 
-{{- if eq (get "config.k8s.control_plane_endpoint.balancer") "kube-vip" }}
+{{- if ne (get "config.k8s.control_plane_endpoint.balancer") "kube-vip" }}
+exit 0
+{{- end }}
 
 NET_IF=$(ip route | grep ' {{ get "host.address" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
 if [ "${NET_IF}" == "" ]; then
@@ -98,4 +100,3 @@ spec:
     name: kube-config
 status: {}
 EOF
-{{- end }}
