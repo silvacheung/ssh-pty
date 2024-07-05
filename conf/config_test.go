@@ -3,7 +3,9 @@ package conf
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"text/template"
@@ -11,6 +13,17 @@ import (
 
 func TestConfig(t *testing.T) {
 	config, err := New("")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmplFile, err := os.Open("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tmplFile.Close()
+
+	tmpl, err := io.ReadAll(tmplFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +45,7 @@ func TestConfig(t *testing.T) {
 		"replace":    strings.Replace,
 	})
 
-	tpl, err = tpl.Parse(``)
+	tpl, err = tpl.Parse(string(tmpl))
 	if err != nil {
 		t.Fatal(err)
 	}
