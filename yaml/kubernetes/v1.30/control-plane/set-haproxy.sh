@@ -6,20 +6,16 @@ set -e
 exit 0
 {{- end }}
 
-mkdir -p /etc/haproxy
-mkdir -p /etc/keepalived
-
-NET_IF=$(ip route | grep ' {{ get "host.address" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
+NET_IF=$(ip route | grep ' {{ get "host.internal" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
 if [ "${NET_IF}" == "" ]; then
-  NET_IF=$(ip route | grep ' {{ get "host.internal" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
-fi
-
-if [ "${NET_IF}" == "" ]; then
-  echo "获取主机网卡名失败"
+  echo "获取主机网卡名 >> 失败"
   exit 1
 fi
 
-echo "写入Haproxy配置文件"
+mkdir -p /etc/haproxy
+mkdir -p /etc/keepalived
+
+echo "写入配置文件 >> /etc/haproxy/haproxy.cfg"
 cat > /etc/haproxy/haproxy.cfg << EOF
 # /etc/haproxy/haproxy.cfg
 #---------------------------------------------------------------------
@@ -85,7 +81,7 @@ backend b-kube-api-server
 #  stats uri /stats
 EOF
 
-echo "写入Keepalived配置文件"
+echo "写入配置文件 >> /etc/keepalived/keepalived.conf"
 cat > /etc/keepalived/keepalived.conf << EOF
 ! /etc/keepalived/keepalived.conf
 ! Configuration File for keepalived
@@ -137,8 +133,7 @@ vrrp_instance haproxy-vip {
 }
 EOF
 
-# 写入Keepalived检测脚本
-echo "写入Keepalived检测脚本"
+echo "写入检测脚本 >> /etc/keepalived/check-api-server.sh"
 cat >/etc/keepalived/check-api-server.sh<<EOF
 #!/bin/sh
 curl -sfk --max-time 3 https://localhost:{{ get "config.k8s.control_plane_endpoint.port" }}/healthz -o /dev/null
@@ -147,7 +142,7 @@ EOF
 chmod +x /etc/keepalived/check-api-server.sh
 
 # see https://github.com/kubernetes/kubeadm/blob/main/docs/ha-considerations.md#options-for-software-load-balancing
-echo "创建Haproxy静态Pod部署清单"
+echo "写入静态POD文件 >> /etc/kubernetes/manifests/haproxy.yaml"
 cat > /etc/kubernetes/manifests/haproxy.yaml << EOF
 apiVersion: v1
 kind: Pod
@@ -180,7 +175,7 @@ spec:
 EOF
 
 # see https://github.com/kubernetes/kubeadm/blob/main/docs/ha-considerations.md#options-for-software-load-balancing
-echo "创建Keepalived静态Pod部署清单"
+echo "写入静态POD文件 >> /etc/kubernetes/manifests/keepalived.yaml"
 cat > /etc/kubernetes/manifests/keepalived.yaml << EOF
 apiVersion: v1
 kind: Pod

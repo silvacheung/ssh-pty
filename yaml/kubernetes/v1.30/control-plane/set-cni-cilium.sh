@@ -6,9 +6,10 @@ set -e
 exit 0
 {{- end }}
 
-echo "安装cilium"
+echo "安装Cilium >> 添加cilium仓库"
 helm repo add cilium https://helm.cilium.io/
 
+echo "安装Cilium >> 执行cilium安装"
 helm upgrade --install cilium cilium/cilium \
   --version 1.15.6 \
   --namespace kube-system \
@@ -33,5 +34,5 @@ helm upgrade --install cilium cilium/cilium \
   --set hubble.ui.enabled=false \
   --set hubble.ui.replicas=1
 
-echo "滚动更新CoreDNS"
+echo "安装Cilium >> 滚动更新Coredns"
 kubectl rollout restart deployment/coredns -n kube-system

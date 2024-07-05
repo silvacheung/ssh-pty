@@ -34,7 +34,6 @@ config:
     version: "1.7.15"
     runc_version: "1.1.12"
     cni_version: "1.4.1"
-    cri_ctl_version: "1.30.0"
     sand_box_image: "registry.aliyuncs.com/google_containers/pause:3.9"
     certs_d:
       docker.io:
@@ -132,14 +131,15 @@ await:
 script:
   - yaml/kubernetes/v1.30/control-plane/set-resolv-conf.sh
   - yaml/kubernetes/v1.30/control-plane/set-apt.sh
-  - yaml/kubernetes/v1.30/control-plane/set-pre-check.sh
+  - yaml/kubernetes/v1.30/control-plane/set-hosts.sh
   - yaml/kubernetes/v1.30/control-plane/set-hostname.sh
+  - yaml/kubernetes/v1.30/control-plane/set-pre-check.sh
   - yaml/kubernetes/v1.30/control-plane/set-lb-config.sh
   - yaml/kubernetes/v1.30/control-plane/set-lb-install.sh
-  - yaml/kubernetes/v1.30/control-plane/set-hosts.sh
   - yaml/kubernetes/v1.30/control-plane/set-os-system.sh
   - yaml/kubernetes/v1.30/control-plane/set-ntp-server.sh
-  - yaml/kubernetes/v1.30/control-plane/set-containerd.sh
+  - yaml/kubernetes/v1.30/control-plane/set-containerd-config.sh
+  - yaml/kubernetes/v1.30/control-plane/set-containerd-install.sh
   - yaml/kubernetes/v1.30/control-plane/set-kubeadm.sh
   - yaml/kubernetes/v1.30/control-plane/set-haproxy.sh
   - yaml/kubernetes/v1.30/control-plane/set-kube-vip.sh

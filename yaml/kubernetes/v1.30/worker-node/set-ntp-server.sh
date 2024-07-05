@@ -2,7 +2,8 @@
 
 set -e
 
-# set ntp server
+echo "设置时间同步 >> chrony"
+
 # clear old server and disable pool
 sed -i '/^server/d' /etc/chrony/chrony.conf
 sed -i 's/^pool /#pool /g' /etc/chrony/chrony.conf

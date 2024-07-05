@@ -6,19 +6,15 @@ set -e
 exit 0
 {{- end }}
 
-NET_IF=$(ip route | grep ' {{ get "host.address" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
+NET_IF=$(ip route | grep ' {{ get "host.internal" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
 if [ "${NET_IF}" == "" ]; then
-  NET_IF=$(ip route | grep ' {{ get "host.internal" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
-fi
-
-if [ "${NET_IF}" == "" ]; then
-  echo "获取主机网卡名失败"
+  echo "获取主机网卡名 >> 失败"
   exit 1
 fi
 
 # see https://github.com/kubernetes/kubeadm/blob/main/docs/ha-considerations.md#options-for-software-load-balancing
 # gen: docker run --network host --rm ghcr.io/kube-vip/kube-vip:v0.8.0 manifest pod --interface enp3s0 --address 172.16.67.204 --controlplane --services --arp --leaderElection --enableLoadBalancer
-echo "创建kube-vip静态Pod部署清单"
+echo "写入静态POD文件 >> /etc/kubernetes/manifests/kube-vip.yaml"
 cat > /etc/kubernetes/manifests/kube-vip.yaml << EOF
 apiVersion: v1
 kind: Pod

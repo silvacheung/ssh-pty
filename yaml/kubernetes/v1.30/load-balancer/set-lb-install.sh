@@ -3,17 +3,18 @@
 set -e
 
 # 重命名配置文件(否则haproxy安装将阻塞确认配置文件)
+echo "重命名配置文件 >> /etc/haproxy/haproxy.cfg"
 if [ -f /etc/haproxy/haproxy.cfg ]; then
   mv -f /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.000
 fi
 
+echo "重命名配置文件 >> /etc/keepalived/keepalived.conf"
 if [ -f /etc/keepalived/keepalived.conf ]; then
   mv -f /etc/keepalived/keepalived.conf /etc/keepalived/keepalived.conf.000
 fi
 
-# 安装haproxy
 if [ ! "$(command -v haproxy)" ]; then
-  echo "安装haproxy"
+  echo "安装LoadBalancer >> haproxy"
 	curl https://haproxy.debian.net/bernat.debian.org.gpg | gpg --dearmor > /usr/share/keyrings/haproxy.debian.net.gpg
 	echo deb "[signed-by=/usr/share/keyrings/haproxy.debian.net.gpg]" http://haproxy.debian.net bookworm-backports-2.9 main > /etc/apt/sources.list.d/haproxy.list
 	apt update
@@ -22,41 +23,39 @@ if [ ! "$(command -v haproxy)" ]; then
 	systemctl enable haproxy --now
 fi
 
-# 安装keepalived
 if [ ! "$(command -v keepalived)" ]; then
-  echo "安装keepalived"
+  echo "安装LoadBalancer >> keepalived"
 	apt update
 	apt -y install keepalived
 	systemctl daemon-reload
 	systemctl enable keepalived --now
 fi
 
-# 是否安装成功
 if [[ "$(systemctl is-enabled haproxy)" == "enabled" && "$(systemctl is-enabled keepalived)" == "enabled" ]]; then
-	echo "LB Is Enabled"
+	echo "安装LoadBalancer >> enabled"
 else
-	echo "LB Not Enabled"
+	echo "安装LoadBalancer >> not enabled"
 	exit 1
 fi
 
-# 覆盖默认配置文件
+echo "回滚重命名文件 >> /etc/haproxy/haproxy.cfg"
 if [ -f /etc/haproxy/haproxy.cfg.000 ]; then
   mv /etc/haproxy/haproxy.cfg.000 /etc/haproxy/haproxy.cfg
 fi
 
+echo "回滚重命名文件 >> /etc/keepalived/keepalived.conf"
 if [ -f /etc/keepalived/keepalived.conf.000 ]; then
   mv /etc/keepalived/keepalived.conf.000 /etc/keepalived/keepalived.conf
 fi
 
-# haproxy、keepalived重启
+echo "安装LoadBalancer >> restart service"
 systemctl daemon-reload
 systemctl restart haproxy
 systemctl restart keepalived
 
-# 是否成功运行
 if [[ "$(systemctl is-active haproxy)" == "active" && "$(systemctl is-active keepalived)" == "active" ]]; then
-	echo "LB Is Running"
+	echo "安装LoadBalancer >> active"
 else
-	echo "LB Not Running"
+	echo "安装LoadBalancer >> not active"
 	exit 1
 fi

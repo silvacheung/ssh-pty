@@ -4,6 +4,7 @@ set -e
 
 mkdir -p /etc/kubernetes/audit
 
+echo "写入配置文件 >> /etc/kubernetes/audit/audit-policy.yaml"
 cat >/etc/kubernetes/audit/audit-policy.yaml<<EOF
 ---
 # see https://kubernetes.io/zh-cn/docs/tasks/debug/debug-cluster/audit/#audit-policy
@@ -133,6 +134,7 @@ rules:
 
 EOF
 
+echo "写入配置文件 >> /etc/kubernetes/audit/audit-webhook.yaml"
 cat >/etc/kubernetes/audit/audit-webhook.yaml<<EOF
 ---
 apiVersion: v1

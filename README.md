@@ -3,6 +3,7 @@
 # [debian mirror](https://www.debian.org/mirror/sponsors)
 
 # 替换镜像源(指定替换)
+
 ```shell
 cp sources.list sources.list.bak
 sed -ri 's/deb.debian.org/mirrors.ustc.edu.cn/' /etc/apt/sources.list
@@ -10,6 +11,7 @@ sed -ri 's/security.debian.org/mirrors.ustc.edu.cn/' /etc/apt/sources.list
 ```
 
 # 替换镜像源(正则替换)
+
 ```shell
 cp sources.list sources.list.bak
 sed -i 's/http[^*]*\/debian-security/http\:\/\/mirrors\.ustc\.edu\.cn\/debian-security/g' /etc/apt/sources.list
@@ -17,13 +19,44 @@ sed -i 's/http[^*]*\/debian/http\:\/\/mirrors\.ustc\.edu\.cn\/debian/g' /etc/apt
 ```
 
 # 镜像源[仓库授权](https://manpages.debian.org/testing/apt/apt_auth.conf.5.en.html)
+
 ```shell
 cat > /etc/apt/auth.conf.d/auth.conf << EOF
 machine example.org login admin password 123456
 EOF
 ```
 
+# 设置Harbor作为docker mirror
+
+- (1) 添加Harbor的Docker镜像代理仓库
+- (2) 添加Harbor的Docker镜像代理项目
+- (3) 设置Docker registry mirror
+
+```shell
+cat > /etc/docker/daemon.json << EOF
+{
+  "registry-mirrors": ["http://<harbor local proxy>"],
+  "insecure-registries": ["http://<harbor local proxy>"]
+}
+EOF
+```
+
+- (4) 设置Harbor的本地代理配置(nginx)
+
+```text
+server {
+    listen 80;
+
+    location /v2/ {
+        proxy_pass https://<harbor.example.org>/v2/<harbor project name>/;
+        proxy_ssl_server_name on;
+        proxy_set_header Authorization 'Basic <base64 harbor account:password>';
+    }
+}
+```
+
 # 重置集群
+
 ```shell
 # k8s reset
 kubeadm reset -f --cri-socket unix:///var/run/containerd/containerd.sock
@@ -88,6 +121,7 @@ systemctl daemon-reload
 ```
 
 # 需要单独挂盘的目录
+
 - `/var/lib/containerd`
 - `/var/lib/etcd`
 - `/var/log`

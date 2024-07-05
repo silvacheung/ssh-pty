@@ -4,21 +4,16 @@ set -e
 # k8s优化
 # see https://zhuanlan.zhihu.com/p/647149643
 
-# 获取网口
-NET_IF=$(ip route | grep ' {{ get "host.address" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
+NET_IF=$(ip route | grep ' {{ get "host.internal" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
 if [ "${NET_IF}" == "" ]; then
-  NET_IF=$(ip route | grep ' {{ get "host.internal" }} ' | grep 'proto kernel scope link src' | sed -e 's/^.*dev.//' -e 's/.proto.*//' | uniq)
-fi
-
-if [ "${NET_IF}" == "" ]; then
-  echo "获取主机网卡名称失败"
+  echo "获取主机网卡名 >> 失败"
   exit 1
 fi
 
-# 修改etcd的IO调度优先级
+echo "优化K8S性能 >> 修改etcd的IO调度优先级"
 ionice -c2 -n0 -p $(pgrep etcd)
 
-# 提高etcd对于对等网络流量优先级
+echo "优化K8S性能 >> 提高etcd对于对等网络流量优先级"
 if [ "$(tc qdisc show dev ${NET_IF} handle 1)" != "" ]; then
   tc qdisc del dev ${NET_IF} root handle 1: prio bands 3
 fi

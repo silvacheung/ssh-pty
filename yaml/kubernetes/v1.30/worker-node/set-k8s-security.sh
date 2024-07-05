@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo "增强K8S安全性 >> 设置集群目录权限"
+
 # control plane
 chmod 700 -f /var/lib/etcd
 chown root:root -f /var/lib/etcd

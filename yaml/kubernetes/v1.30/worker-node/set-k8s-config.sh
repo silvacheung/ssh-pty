@@ -2,8 +2,6 @@
 
 set -e
 
-#HA_ADDR="$(echo "{{ get "config.k8s.control_plane_endpoint" }}" | awk '{split($1, arr, ":"); print arr[1]}')"
-#HA_PORT="$(echo "{{ get "config.k8s.control_plane_endpoint" }}" | awk '{split($1, arr, ":"); print arr[2]}')"
 CONTROL_PLANE_ENDPOINT_DOMAIN="{{ get "config.k8s.control_plane_endpoint.domain" }}"
 CONTROL_PLANE_ENDPOINT_ADDRESS="{{ get "config.k8s.control_plane_endpoint.address" }}"
 CONTROL_PLANE_ENDPOINT_PORT="{{ get "config.k8s.control_plane_endpoint.port" }}"
@@ -19,6 +17,7 @@ elif [ "${CONTROL_PLANE_ENDPOINT_ADDRESS}" != "" ]; then
   CONTROL_PLANE_ENDPOINT="${CONTROL_PLANE_ENDPOINT_ADDRESS}:${CONTROL_PLANE_ENDPOINT_PORT}"
 fi
 
+echo "写入配置文件 >> /etc/kubernetes/kubeadm-config.yaml"
 cat >/etc/kubernetes/kubeadm-config.yaml<<EOF
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta4/
