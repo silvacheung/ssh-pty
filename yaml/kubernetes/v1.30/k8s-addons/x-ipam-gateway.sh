@@ -2,7 +2,7 @@
 
 set -e
 
-{{- if get "config.ipam-gateway.enable" }}{{- else }}
+{{- if ne (get "config.ipam-gateway.enable") true }}
 exit 0
 {{- end }}
 

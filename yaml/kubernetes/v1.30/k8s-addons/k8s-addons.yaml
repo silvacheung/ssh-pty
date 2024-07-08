@@ -5,7 +5,7 @@ config:
   metrics-server:
     enable: false
     version: 3.12.1
-    replicas: 3
+    replicas: 1
     service_monitor: false
 
   nfs:
@@ -13,18 +13,19 @@ config:
     version:  4.0.18
     server: 172.16.67.253
     path: /mnt/nas-data/k8s-nfs
-    replicas: 3
+    replicas: 1
     mnt_options:
       - nfsvers=4
 
   cert-manager:
     enable: false
     version: v1.15.1
-    replicas: 3
+    replicas: 1
 
   prometheus-stack:
     enable: false
     version: 60.4.0
+    replicas: 1
     kube_version_override: 1.30.0
     grafana_admin_password: gfa@12345
     storage_class_name: nfs-subdir-external
@@ -32,6 +33,7 @@ config:
   harbor:
     enable: false
     version: 1.15.0
+    replicas: 1
     node_port_http: 30080
     node_port_https: 30443
     external_url: https://localhost:30443
