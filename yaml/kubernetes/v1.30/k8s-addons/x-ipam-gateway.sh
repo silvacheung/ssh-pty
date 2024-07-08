@@ -168,7 +168,7 @@ spec:
               mountPath: /etc/nginx/conf.d/http
             - name: nginx-stream-conf-dir
               mountPath: /etc/nginx/conf.d/stream
-        - image: {{ get "config.ipam-gateway.registry" }}/{{ get "config.ipam-gateway.repository" }}
+        - image: {{ get "config.ipam-gateway.registry" }}/{{ get "config.ipam-gateway.repository" }}:{{ get "config.ipam-gateway.version" }}
           name: ipam-svc-controller
           imagePullPolicy: IfNotPresent
           resources:

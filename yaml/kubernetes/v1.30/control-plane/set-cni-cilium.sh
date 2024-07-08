@@ -14,6 +14,7 @@ helm upgrade --install cilium cilium/cilium \
   --version 1.15.6 \
   --namespace kube-system \
   --set ipam.mode=kubernetes \
+  --set operator.replicas=2 \
   --set k8s.requireIPv4PodCIDR=true \
   --set kubeProxyReplacement=true \
   --set kubeProxyReplacementHealthzBindAddr=0.0.0.0:10256 \

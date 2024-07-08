@@ -18,7 +18,7 @@ helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheu
   --set kube-state-metrics.image.registry=registry.k8s.io \
   --set kubelet.serviceMonitor.attachMetadata.node=true \
   --set prometheusOperator.admissionWebhooks.patch.image.registry=registry.k8s.io \
-  --set prometheusOperator.admissionWebhooks.certManager.enabled=true \
+  --set prometheusOperator.admissionWebhooks.certManager.enabled={{ get "config.prometheus-stack.use_cert_manager" }} \
   --set prometheusOperator.admissionWebhooks.certManager.rootCert.duration=87840h0m0s \
   --set prometheusOperator.admissionWebhooks.certManager.admissionCert.duration=87840h0m0s \
   --set prometheusOperator.admissionWebhooks.deployment.enabled=true \

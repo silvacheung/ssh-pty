@@ -26,6 +26,7 @@ config:
     enable: false
     version: 60.4.0
     replicas: 1
+    use_cert_manager: true
     kube_version_override: 1.30.0
     grafana_admin_password: gfa@12345
     storage_class_name: nfs-subdir-external
@@ -48,9 +49,10 @@ config:
 
   ipam-gateway:
     enable: false
+    version: 1.0.0
     ip_cidr: 20.10.0.0/16
     registry: example.com
-    repository: ipam-gateway/ipam-svc-controller:1.0.0
+    repository: ipam-gateway/ipam-svc-controller
     registry_username: admin
     registry_password: 123456
     nodes: []
