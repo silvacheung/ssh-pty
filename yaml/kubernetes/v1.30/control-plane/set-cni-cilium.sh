@@ -35,5 +35,5 @@ helm upgrade --install cilium cilium/cilium \
   --set hubble.ui.enabled=false \
   --set hubble.ui.replicas=1
 
-echo "安装Cilium >> 滚动更新Coredns"
-kubectl rollout restart deployment/coredns -n kube-system
+#echo "安装Cilium >> 滚动更新Coredns"
+#kubectl rollout restart deployment/coredns -n kube-system

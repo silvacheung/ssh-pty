@@ -6,6 +6,12 @@ APT_MIRROR={{ if get "config.apt.mirror" }}"{{ get "config.apt.mirror" }}"{{ els
 APT_USERNAME={{ if get "config.apt.username" }}"{{ get "config.apt.username" }}"{{ else }}""{{ end }}
 APT_PASSWORD={{ if get "config.apt.password" }}"{{ get "config.apt.password" }}"{{ else }}""{{ end }}
 APT_MACHINE=$(echo "${APT_MIRROR#*//}" | awk '{split($1, arr, "/"); print arr[1]}')
+APT_RELEASE=$(cat /etc/os-release | grep 'VERSION_CODENAME=' | awk '{split($1, arr, "="); print arr[2]}')
+
+echo "更新APT源 >> 获取发行名称"
+if [ -z "${APT_RELEASE}" ]; then
+  APT_RELEASE=stable
+fi
 
 echo "更新APT源 >> ${APT_MIRROR}"
 if [[ -n "${APT_USERNAME}" || -n "${APT_PASSWORD}" ]]; then
@@ -21,17 +27,17 @@ if [ -f /etc/apt/sources.list ]; then
   fi
 
   cat >/etc/apt/sources.list<<EOF
-deb ${APT_MIRROR}/debian stable main non-free-firmware
-deb-src ${APT_MIRROR}/debian stable main non-free-firmware
+deb ${APT_MIRROR}/debian ${APT_RELEASE} main non-free-firmware
+deb-src ${APT_MIRROR}/debian ${APT_RELEASE} main non-free-firmware
 
-deb ${APT_MIRROR}/debian-security stable-security main non-free-firmware
-deb-src ${APT_MIRROR}/debian-security stable-security main non-free-firmware
+deb ${APT_MIRROR}/debian-security ${APT_RELEASE}-security main non-free-firmware
+deb-src ${APT_MIRROR}/debian-security ${APT_RELEASE}-security main non-free-firmware
 
-deb ${APT_MIRROR}/debian stable-updates main non-free-firmware
-deb-src ${APT_MIRROR}/debian stable-updates main non-free-firmware
+deb ${APT_MIRROR}/debian ${APT_RELEASE}-updates main non-free-firmware
+deb-src ${APT_MIRROR}/debian ${APT_RELEASE}-updates main non-free-firmware
 
-deb ${APT_MIRROR}/debian stable-backports main non-free-firmware
-deb-src ${APT_MIRROR}/debian stable-backports main non-free-firmware
+deb ${APT_MIRROR}/debian ${APT_RELEASE}-backports main non-free-firmware
+deb-src ${APT_MIRROR}/debian ${APT_RELEASE}-backports main non-free-firmware
 EOF
 fi
 
