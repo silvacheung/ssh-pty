@@ -129,11 +129,11 @@ await:
     - "lwy-cn-cd-tpy-std-1721667201"
 
 script:
-  - yaml/kubernetes/v1.30/control-plane/set-pre-check.sh
   - yaml/kubernetes/v1.30/control-plane/set-resolv-conf.sh
   - yaml/kubernetes/v1.30/control-plane/set-apt.sh
   - yaml/kubernetes/v1.30/control-plane/set-hosts.sh
   - yaml/kubernetes/v1.30/control-plane/set-hostname.sh
+  - yaml/kubernetes/v1.30/control-plane/set-pre-check.sh
   - yaml/kubernetes/v1.30/control-plane/set-lb-config.sh
   - yaml/kubernetes/v1.30/control-plane/set-lb-install.sh
   - yaml/kubernetes/v1.30/control-plane/set-os-system.sh

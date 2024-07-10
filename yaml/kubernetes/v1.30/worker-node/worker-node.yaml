@@ -109,11 +109,11 @@ sftp:
     - F:\cri\
 
 script:
-  - yaml/kubernetes/v1.30/control-plane/set-pre-check.sh
   - yaml/kubernetes/v1.30/control-plane/set-resolv-conf.sh
   - yaml/kubernetes/v1.30/control-plane/set-apt.sh
   - yaml/kubernetes/v1.30/control-plane/set-hosts.sh
   - yaml/kubernetes/v1.30/control-plane/set-hostname.sh
+  - yaml/kubernetes/v1.30/control-plane/set-pre-check.sh
   - yaml/kubernetes/v1.30/worker-node/set-os-system.sh
   - yaml/kubernetes/v1.30/worker-node/set-ntp-server.sh
   - yaml/kubernetes/v1.30/control-plane/set-containerd-config.sh

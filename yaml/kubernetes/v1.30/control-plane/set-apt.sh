@@ -43,5 +43,5 @@ fi
 
 echo "安装APT包 >> update upgrade install"
 apt -y update
-apt -y upgrade
+#apt -y upgrade
 apt -y install sudo gnupg ncat selinux-basics selinux-utils curl openssl tar socat conntrack ebtables ipset ipvsadm chrony ethtool lvm2 nfs-common ceph-common
