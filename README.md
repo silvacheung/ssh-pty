@@ -58,6 +58,9 @@ server {
 # 重置集群
 
 ```shell
+# cni remove
+helm uninstall cilium -n kube-system
+
 # k8s reset
 kubeadm reset -f --cri-socket unix:///var/run/containerd/containerd.sock
 
