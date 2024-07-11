@@ -28,7 +28,7 @@ helm upgrade --install cilium cilium/cilium \
   --set internalTrafficPolicy=Cluster \
   --set externalTrafficPolicy=Cluster \
   --set routingMode=native \
-  --set ipv4NativeRoutingCIDR={{ get "config.k8s.ipvs_exclude_cidr" }} \
+  --set ipv4NativeRoutingCIDR={{ get "config.k8s.ipv4_native_cidr" }} \
   --set maglev.tableSize=131071 \
   --set maglev.hashSeed=$(head -c12 /dev/urandom | base64 -w0) \
   --set loadBalancer.mode=hybrid \
