@@ -119,7 +119,7 @@ vrrp_instance haproxy-vip {
   unicast_src_ip {{ get "host.internal" }}
   unicast_peer {
     {{- range (get "hosts") }}
-    {{- if eq .hostname (get "host.hostname") }}{{- else }}
+    {{- if ne .hostname (get "host.hostname") }}
     {{ .internal }}
     {{- end }}
     {{- end }}

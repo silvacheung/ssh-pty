@@ -12,7 +12,7 @@ config:
       domain: "k8s.api-server.lb"
       address: "172.16.67.204"
       port: "9443"
-      sans: []
+      sans: [ ]
     image_repository: "registry.aliyuncs.com/google_containers"
     # 一下三个决定了集群规模
     # 集群最大节点数: 2^(node_cidr_mask_size-pod_subnet(cidr))
@@ -28,6 +28,7 @@ config:
     certificate_key: "9298778de88f1a0cb63823dba01e33e6d057358a01ad429a9b739bf79844b756"
     bootstrap_token: "cb6xll.lo5z8trai8zwzh7t"
     untainted: "control-plane" # "control-plane"
+    skip_phases: [ "addon/kube-proxy" ] # "addon/kube-proxy"
 
   containerd:
     arch: "amd64"

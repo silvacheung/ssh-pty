@@ -47,11 +47,11 @@ if [ ! -e ${CRI_DIR}/${RUNC_ASC} ]; then
   curl -fsSL -o ${CRI_DIR}/${RUNC_ASC} https://github.com/opencontainers/runc/releases/download/v${RUNC_VERSION}/${RUNC_ASC} || rm -f ${CRI_DIR}/${RUNC_ASC} || exit 1
 fi
 
-RUNC_KEYRING=runc.keyring
-if [ ! -e ${CRI_DIR}/runc.keyring ]; then
-  echo "安装Container >> 下载${RUNC_KEYRING}"
-  curl -fsSL -o ${CRI_DIR}/runc.keyring https://github.com/opencontainers/runc/blob/main/runc.keyring || rm -f ${CRI_DIR}/runc.keyring
-fi
+#RUNC_KEYRING=runc.keyring
+#if [ ! -e ${CRI_DIR}/runc.keyring ]; then
+#  echo "安装Container >> 下载${RUNC_KEYRING}"
+#  curl -fsSL -o ${CRI_DIR}/runc.keyring https://github.com/opencontainers/runc/blob/main/runc.keyring || rm -f ${CRI_DIR}/runc.keyring
+#fi
 
 echo "安装Container >> 校验${RUNC_ASC}"
 

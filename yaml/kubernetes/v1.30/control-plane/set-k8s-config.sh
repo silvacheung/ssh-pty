@@ -53,7 +53,7 @@ apiServer:
   certSANs:
   - "{{ get "config.k8s.control_plane_endpoint.address" }}"
   {{- range get "config.k8s.control_plane_endpoint.sans" }}
-  {{- if eq (get "config.k8s.control_plane_endpoint.address") . }}{{- else }}
+  {{- if ne (get "config.k8s.control_plane_endpoint.address") . }}
   - "{{ . }}"
   {{- end }}
   {{- end }}
@@ -165,7 +165,9 @@ nodeRegistration:
     hostname-override: "{{ get "host.hostname" }}"
 
 skipPhases:
-- "addon/kube-proxy"
+{{- range get ("config.k8s.skip_phases") }}
+- "{{ . }}"
+{{- end }}
 
 ---
 # see https://kubernetes.io/zh-cn/docs/reference/config-api/kube-proxy-config.v1alpha1/
@@ -200,11 +202,9 @@ ipvs:
   tcpTimeout: "0"
   tcpFinTimeout: "0"
   udpTimeout: "0"
-  {{- if get "config.k8s.ipvs_exclude_cidr" }}
   excludeCIDRs:
   {{- range (get "config.k8s.ipvs_exclude_cidr") }}
   - "{{ . }}"
-  {{- end }}
   {{- end }}
 
 #nodePortAddresses:
@@ -277,11 +277,9 @@ evictionSoft:
 evictionSoftGracePeriod:
   memory.available: "2m"
 
-{{- if get "config.k8s.cluster_dns" }}
 clusterDNS:
 {{- range (get "config.k8s.cluster_dns") }}
 - "{{ . }}"
-{{- end }}
 {{- end }}
 
 ---
