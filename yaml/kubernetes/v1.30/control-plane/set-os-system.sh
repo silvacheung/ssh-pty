@@ -260,3 +260,18 @@ update-alternatives --set iptables /usr/sbin/iptables-legacy >/dev/null 2>&1 || 
 update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy >/dev/null 2>&1 || true
 update-alternatives --set arptables /usr/sbin/arptables-legacy >/dev/null 2>&1 || true
 update-alternatives --set ebtables /usr/sbin/ebtables-legacy >/dev/null 2>&1 || true
+
+# see https://docs.cilium.io/en/stable/operations/performance/tuning/#config-preempt-none
+echo "设置系统数据 >> 不开启内核抢占"
+for CFG in /boot/config*; do
+  echo 'CONFIG_PREEMPT_NONE=y' >> "$CFG"
+  TEM_FILE="$$.tmp"
+  awk ' !x[$0]++{print > "'$TEM_FILE'"}' "$CFG"
+  mv $TEM_FILE "$CFG"
+done
+
+# see https://docs.cilium.io/en/stable/operations/performance/tuning/#set-cpu-governor-to-performance
+#echo "设置系统数据 >> 将CPU调节器设置为性能"
+#for CPU in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+#  echo performance > "$CPU"
+#done
