@@ -22,6 +22,7 @@ helm upgrade --install cilium cilium/cilium \
   --set k8sServiceHost={{ get "config.k8s.control_plane_endpoint.address" }} \
   --set k8sServicePort={{ get "config.k8s.control_plane_endpoint.port" }} \
   --set kubeProxyReplacementHealthzBindAddr=0.0.0.0:10256 \
+  --set containerRuntime.integration=containerd \
   --set bandwidthManager.enabled=true \
   --set bandwidthManager.bbr=true \
   --set localRedirectPolicy=true \
