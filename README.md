@@ -128,3 +128,18 @@ systemctl daemon-reload
 - `/var/lib/containerd`
 - `/var/lib/etcd`
 - `/var/log`
+
+# 节点故障导致的非体面关闭
+
+- 节点非体面关闭会导致该节点上的`StatefulSet`的的pod无法从节点上删除
+- 参考官方文档:[节点非体面关闭处理](https://kubernetes.io/zh-cn/docs/concepts/cluster-administration/node-shutdown/#non-graceful-node-shutdown)
+- 处理方式如下
+
+```shell
+# 给`kube-controller-manager`启用`NodeOutOfServiceVolumeDetach`门控
+# 给异常节点添加指定污点`node.kubernetes.io/out-of-service:NoSchedule`或者`node.kubernetes.io/out-of-service:Execute`
+kubectl taint nodes <node> node.kubernetes.io/out-of-service:NoSchedule
+
+# 节点恢复则删除污点
+kubectl taint nodes <node> node.kubernetes.io/out-of-service:NoSchedule-
+```
