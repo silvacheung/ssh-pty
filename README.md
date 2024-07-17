@@ -136,7 +136,7 @@ systemctl daemon-reload
 - 处理方式如下
 
 ```shell
-# 给`kube-controller-manager`启用`NodeOutOfServiceVolumeDetach`门控
+# 给`kube-controller-manager`启用`NodeOutOfServiceVolumeDetach`门控（1.28已经GA）
 # 给异常节点添加指定污点`node.kubernetes.io/out-of-service:NoSchedule`或者`node.kubernetes.io/out-of-service:Execute`
 kubectl taint nodes <node> node.kubernetes.io/out-of-service:NoSchedule
 
