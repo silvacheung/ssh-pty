@@ -115,6 +115,7 @@ func (xt *Xterm) ping() error {
 	if err != nil {
 		return err
 	}
+	defer session.Close()
 	pong, err := session.Output(`echo "pong"`)
 	if err != nil {
 		return err
