@@ -245,6 +245,8 @@ kubeAPIBurst: 150
 maxOpenFiles: 1024000
 failSwapOn: true
 runtimeRequestTimeout: "10m"
+imageMinimumGCAge: "720h"
+imageMaximumGCAge: "0s"
 
 #featureGates:
 #  RotateKubeletServerCertificate: "true"
