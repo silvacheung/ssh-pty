@@ -111,8 +111,8 @@ rm -rf /var/lib/kubelet
 rm -rf /opt/cni
 rm -rf /etc/cni
 rm -rf /var/lib/cni
-rm -rf /usr/local/bin/cilium
-rm -rf /var/run/cilium
+#rm -rf /usr/local/bin/cilium
+#rm -rf /run/cilium
 rm -rf ${HOME}/.kube
 rm -rf /etc/haproxy
 rm -rf /etc/keepalived
@@ -121,6 +121,9 @@ rm -rf /var/run/haproxy*
 
 # reload
 systemctl daemon-reload
+
+# reboot
+reboot
 ```
 
 # 需要单独挂盘的目录

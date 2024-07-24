@@ -28,6 +28,8 @@ helm upgrade --install cilium cilium/cilium \
   --set bandwidthManager.enabled=true \
   --set bandwidthManager.bbr=true \
   --set localRedirectPolicy=true \
+  --set ingressController.enabled=true \
+  --set gatewayAPI.enabled=true \
   --set internalTrafficPolicy=Cluster \
   --set externalTrafficPolicy=Cluster \
   --set loadBalancer.acceleration=disabled \
@@ -37,6 +39,9 @@ helm upgrade --install cilium cilium/cilium \
   --set maglev.hashSeed=$(head -c12 /dev/urandom | base64 -w0) \
   --set socketLB.enabled=true \
   --set socketLB.hostNamespaceOnly=true \
+  --set hostFirewall.enabled=true \
+  --set l2announcements.enabled=true \
+  --set externalIPs.enabled=true \
   --set bpf.masquerade=true \
   --set bpf.lbExternalClusterIP=true \
   --set bpf.mapDynamicSizeRatio=0.0025 \
@@ -49,8 +54,6 @@ helm upgrade --install cilium cilium/cilium \
   --set bpf.policyMapMax=32768 \
   --set bpf.tproxy=true \
   --set bpfClockProbe=true \
-  --set hostFirewall.enabled=true \
-  --set l2announcements.enabled=true \
   --set encryption.enabled=false \
   --set encryption.nodeEncryption=false \
   --set encryption.type=wireguard \
@@ -64,6 +67,14 @@ helm upgrade --install cilium cilium/cilium \
   --set hubble.ui.service.type=ClusterIP \
   --set hubble.tls.auto.enabled=false \
   --set hubble.tls.auto.method=cronJob
+
+# enable gateway API(需要先安装GatewayCRD)
+# see https://docs.cilium.io/en/stable/network/servicemesh/gateway-api/gateway-api/#prerequisites
+#helm upgrade cilium cilium/cilium \
+#  --version 1.15.7 \
+#  --namespace kube-system \
+#  --reuse-values \
+#  --set gatewayAPI.enabled=true
 
 # native routing mode valid data
 #  --set routingMode=native \
