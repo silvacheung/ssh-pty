@@ -113,3 +113,13 @@ systemctl restart containerd
 ```text
 https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/sample-workload.html
 ```
+
+#### 10.k8s中安装gpu-operator
+```shell
+# https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/23.9.1/index.html
+helm install nvidia-gpu-operator nvidia/gpu-operator -n gpu-operator \
+  --wait \
+  --create-namespace \
+  --set driver.enabled=false \
+  --set toolkit.enabled=false
+```
