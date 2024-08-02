@@ -120,6 +120,41 @@ https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/sample-
 helm install nvidia-gpu-operator nvidia/gpu-operator -n gpu-operator \
   --wait \
   --create-namespace \
+  --set operator.cleanupCRD=true \
   --set driver.enabled=false \
   --set toolkit.enabled=false
+```
+
+#### 卸载gpu-operator
+```shell
+# 卸载Chart
+helm uninstall nvidia-gpu-operator -n gpu-operator
+
+# 确认Operator空间的Pod已被删除或正在删除
+kubectl get pods -n gpu-operator
+
+# helm不会某些CRD，如`clusterpolicy`、`nvidiadrivers`，可以在helm安装时指定`--set operator.cleanupCRD=true`让helm钩子自动删除，也可以手动删除
+kubectl get crd clusterpolicies.nvidia.com
+kubectl get crd nvidiadrivers.nvidia.com
+
+# 列出并删除NVIDIA驱动程序自定义资源
+kubectl get crd nvidiadrivers
+kubectl delete nvidiadriver <cr>
+kubectl delete nvidiadriver <cr>
+
+# 删除指定节点标签
+kubectl.exe label node <node> nvidia.com/gpu-driver-upgrade-state-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.container-toolkit-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.dcgm-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.dcgm-exporter-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.device-plugin-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.driver-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.gpu-feature-discovery-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.node-status-exporter-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.nvsm-
+kubectl.exe label node <node> nvidia.com/gpu.deploy.operator-validator-
+kubectl.exe label node <node> nvidia.com/gpu.present-
+
+# 卸载 Operator 后，NVIDIA 驱动程序模块可能仍会加载。请重新启动节点或使用以下命令卸载它们
+sudo rmmod nvidia_modeset nvidia_uvm nvidia
 ```
