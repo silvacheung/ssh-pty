@@ -73,26 +73,44 @@ sudo apt install linux-headers-$(uname -r) linux-image-$(uname -r)
 - 第三方参考: https://blog.imixs.org/2024/05/19/how-to-run-docker-with-gpu-support/
 - 使用开放版内核模块后，在使用helm安装时需要指定`--set driver.useOpenKernelModules=true`、`--set driver.rdma.useHostMofed=true`
 ```shell
+# 禁用`nouveau`
+modprobe --remove nouveau
+sudo cat > /etc/modprobe.d/blacklist-nouveau.conf << EOF
+blacklist nouveau
+options nouveau modeset=0
+EOF
+sudo update-initramfs -u
+
+# 启用`nouveau`
+sudo rm -f /etc/modprobe.d/blacklist-nouveau.conf
+sudo modprobe nouveau
+sudo update-initramfs -u
+
+# 是否禁用（无输出则已经禁用）
+sudo lsmod | grep nouveau
+
 # 卸载旧包，避免冲突
 sudo apt autoremove nvidia* --purge -y
 sudo apt autoremove cuda* --purge -y
 
-# 下载安装包
+# 安装deb
 sudo curl -fSLO https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo rm -f cuda-keyring_1.1-1_all.deb
 
 # !!!如果上一步无法安装，则使用此步骤手动安装，否则忽略此步骤
 sudo apt install dirmngr apt-transport-https ca-certificates curl gpg -y
 sudo curl -fSL https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/3bf863cc.pub | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-cuda-3bf863cc.gpg
 sudo echo "deb [signed-by=/usr/share/keyrings/nvidia-cuda-3bf863cc.gpg] https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/ /" | sudo tee /etc/apt/sources.list.d/nvidia-cuda-3bf863cc.list
 
-# 安装deb
-sudo dpkg -i cuda-keyring_1.1-1_all.deb
+# 添加仓库
 sudo apt install software-properties-common -y
 sudo add-apt-repository contrib -y
 
-# 安装CUDA工具
+# 安装CUDA工具（可选，如果不需要使用CUDA则不需要安装）
 sudo apt update
 sudo apt -y install cuda-toolkit-12-6
+sudo reboot
 
 # 安装NVIDIA驱动程序（二选一）
 # 1.安装开放内核模块版本
