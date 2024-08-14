@@ -146,3 +146,13 @@ kubectl taint nodes <node> node.kubernetes.io/out-of-service:NoSchedule
 # 节点恢复则删除污点
 kubectl taint nodes <node> node.kubernetes.io/out-of-service:NoSchedule-
 ```
+
+# Harbor更新nginx的ConfigMap并重启nginx
+
+```shell
+# 增加deny配置
+kubectl get cm/harbor-registry-nginx -o yaml | sed 's/location \/ {/location \/devcenter-api-2.0 {\\n      deny all;\\n    }\\n\\n    location \/LICENSE {\\n      deny all;\\n    }\\n\\n    location \/license {\\n      deny all;\\n    }\\n\\n    location \/swagger.json {\\n      deny all;\\n    }\\n\\n    location \/ {/' | kubectl apply -f -
+
+# 重启Nginx
+kubectl rollout restart -n default deployment.apps/harbor-registry-nginx
+```
