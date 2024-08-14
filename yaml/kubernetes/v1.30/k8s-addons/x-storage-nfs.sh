@@ -29,7 +29,6 @@ helm upgrade --install nfs-subdir-external-provisioner nfs-subdir-external-provi
 	--set storageClass.accessModes=ReadWriteOnce \
 	--set storageClass.volumeBindingMode=WaitForFirstConsumer \
 	--set storageClass.onDelete=retain \
-	--set resources.limits.cpu=200m \
 	--set resources.limits.memory=200Mi \
 	--set resources.requests.cpu=50m \
 	--set resources.requests.memory=50Mi

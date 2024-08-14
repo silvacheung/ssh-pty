@@ -59,8 +59,7 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set nginx.replicas={{ get "config.harbor.replicas" }} \
   --set nginx.resources.requests.cpu=50m \
   --set nginx.resources.requests.memory=100Mi \
-  --set nginx.resources.limits.cpu=100m \
-  --set nginx.resources.limits.memory=200Mi \
+  --set nginx.resources.limits.memory=2Gi \
   --set nginx.topologySpreadConstraints[0].maxSkew=1 \
   --set nginx.topologySpreadConstraints[0].topologyKey=kubernetes.io/hostname \
   --set nginx.topologySpreadConstraints[0].nodeTaintsPolicy=Honor \
@@ -68,8 +67,7 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set portal.image.repository=docker.io/goharbor/harbor-portal \
   --set portal.replicas={{ get "config.harbor.replicas" }} \
   --set portal.resources.requests.cpu=50m \
-  --set portal.resources.requests.memory=100Mi \
-  --set portal.resources.limits.cpu=100m \
+  --set portal.resources.requests.memory=50Mi \
   --set portal.resources.limits.memory=200Mi \
   --set portal.topologySpreadConstraints[0].maxSkew=1 \
   --set portal.topologySpreadConstraints[0].topologyKey=kubernetes.io/hostname \
@@ -78,9 +76,8 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set core.image.repository=docker.io/goharbor/harbor-core \
   --set core.replicas={{ get "config.harbor.replicas" }} \
   --set core.resources.requests.cpu=50m \
-  --set core.resources.requests.memory=100Mi \
-  --set core.resources.limits.cpu=100m \
-  --set core.resources.limits.memory=200Mi \
+  --set core.resources.requests.memory=200Mi \
+  --set core.resources.limits.memory=500Mi \
   --set core.topologySpreadConstraints[0].maxSkew=1 \
   --set core.topologySpreadConstraints[0].topologyKey=kubernetes.io/hostname \
   --set core.topologySpreadConstraints[0].nodeTaintsPolicy=Honor \
@@ -88,8 +85,7 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set jobservice.image.repository=docker.io/goharbor/harbor-jobservice \
   --set jobservice.replicas={{ get "config.harbor.replicas" }} \
   --set jobservice.resources.requests.cpu=50m \
-  --set jobservice.resources.requests.memory=100Mi \
-  --set jobservice.resources.limits.cpu=100m \
+  --set jobservice.resources.requests.memory=50Mi \
   --set jobservice.resources.limits.memory=200Mi \
   --set jobservice.topologySpreadConstraints[0].maxSkew=1 \
   --set jobservice.topologySpreadConstraints[0].topologyKey=kubernetes.io/hostname \
@@ -100,12 +96,10 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set registry.registry.image.repository=docker.io/goharbor/registry-photon \
   --set registry.registry.resources.requests.cpu=50m \
   --set registry.registry.resources.requests.memory=100Mi \
-  --set registry.registry.resources.limits.cpu=100m \
-  --set registry.registry.resources.limits.memory=200Mi \
+  --set registry.registry.resources.limits.memory=500Mi \
   --set registry.controller.image.repository=docker.io/goharbor/harbor-registryctl \
   --set registry.controller.resources.requests.cpu=50m \
-  --set registry.controller.resources.requests.memory=100Mi \
-  --set registry.controller.resources.limits.cpu=100m \
+  --set registry.controller.resources.requests.memory=50Mi \
   --set registry.controller.resources.limits.memory=200Mi \
   --set registry.topologySpreadConstraints[0].maxSkew=1 \
   --set registry.topologySpreadConstraints[0].topologyKey=kubernetes.io/hostname \
@@ -121,8 +115,7 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set trivy.replicas={{ get "config.harbor.replicas" }} \
   --set trivy.image.repository=docker.io/goharbor/trivy-adapter-photon \
   --set trivy.resources.requests.cpu=50m \
-  --set trivy.resources.requests.memory=100Mi \
-  --set trivy.resources.limits.cpu=100m \
+  --set trivy.resources.requests.memory=50Mi \
   --set trivy.resources.limits.memory=200Mi \
   --set trivy.topologySpreadConstraints[0].maxSkew=1 \
   --set trivy.topologySpreadConstraints[0].topologyKey=kubernetes.io/hostname \
@@ -131,8 +124,7 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set exporter.replicas={{ get "config.harbor.replicas" }} \
   --set exporter.image.repository=docker.io/goharbor/harbor-exporter \
   --set exporter.resources.requests.cpu=50m \
-  --set exporter.resources.requests.memory=100Mi \
-  --set exporter.resources.limits.cpu=100m \
+  --set exporter.resources.requests.memory=50Mi \
   --set exporter.resources.limits.memory=200Mi \
   --set exporter.topologySpreadConstraints[0].maxSkew=1 \
   --set exporter.topologySpreadConstraints[0].topologyKey=kubernetes.io/hostname \
@@ -142,26 +134,20 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set database.internal.image.repository=docker.io/goharbor/harbor-db \
   --set database.internal.resources.requests.cpu=50m \
   --set database.internal.resources.requests.memory=100Mi \
-  --set database.internal.resources.limits.cpu=100m \
-  --set database.internal.resources.limits.memory=500Mi \
+  --set database.internal.resources.limits.memory=1Gi \
   --set database.internal.livenessProbe.timeoutSeconds=3 \
   --set database.internal.readinessProbe.timeoutSeconds=3 \
   --set database.internal.password=9p%S@e#Sg$#V$hN1 \
   --set database.internal.shmSizeLimit=512Mi \
   --set database.internal.initContainer.migrator.resources.requests.cpu=50m \
   --set database.internal.initContainer.migrator.resources.requests.memory=50Mi \
-  --set database.internal.initContainer.migrator.resources.limits.cpu=100m \
-  --set database.internal.initContainer.migrator.resources.limits.memory=100Mi \
   --set database.internal.initContainer.permissions.resources.requests.cpu=50m \
   --set database.internal.initContainer.permissions.resources.requests.memory=50Mi \
-  --set database.internal.initContainer.permissions.resources.limits.cpu=100m \
-  --set database.internal.initContainer.permissions.resources.limits.memory=100Mi \
   --set redis.type=internal \
   --set redis.internal.image.repository=docker.io/goharbor/redis-photon \
   --set redis.internal.resources.requests.cpu=50m \
   --set redis.internal.resources.requests.memory=100Mi \
-  --set redis.internal.resources.limits.cpu=100m \
-  --set redis.internal.resources.limits.memory=500Mi
+  --set redis.internal.resources.limits.memory=1Gi
 
 
 
