@@ -204,6 +204,9 @@ kubectl label nodes <node> nvidia.com/gpu.deploy.operands=false --overwrite
 # 给不需要安装驱动的节点打上标签
 kubectl label nodes <node> nvidia.com/gpu.deploy.driver=false --overwrite
 
+# 给直通GPU节点打上标签(container/vm-passthrough/vm-vgpu)
+kubectl label node <node-name> --overwrite nvidia.com/gpu.workload.config=vm-passthrough
+
 # 安装Chart
 helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
 helm repo update nvidia
@@ -211,6 +214,7 @@ helm install nvidia-gpu-operator nvidia/gpu-operator -n gpu-operator \
   --create-namespace \
   --set operator.cleanupCRD=true \
   --set driver.enabled=false \
+  --set sandboxWorkloads.enabled=true \
   --set toolkit.env[0].name=CONTAINERD_CONFIG \
   --set toolkit.env[0].value=/etc/containerd/config.toml \
   --set toolkit.env[1].name=CONTAINERD_SOCKET \

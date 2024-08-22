@@ -156,3 +156,22 @@ kubectl get cm/harbor-registry-nginx -o yaml | sed 's/location \/ {/location \/d
 # 重启Nginx
 kubectl rollout restart -n default deployment.apps/harbor-registry-nginx
 ```
+
+# 删除处于Terminating的namespace
+```shell
+# 导出json，并修改json中spec.finalizers设为空数组(下面两种都可以，任选一种，第一种直接设置成空数组，第二种指定删除元素)
+kubectl get ns xxx -o json | jq '.spec.finalizers = []' > xxx.json
+kubectl get ns xxx -o json | jq 'del(.spec.finalizers[] | select(. == "kubernetes"))' > xxx.json
+
+# 执行kubectl proxy，启动一个kube api server本地代理，待执行完删除命令后再结束掉
+kubectl proxy
+
+# 在另一个终端窗口中调用api-server的API删除
+curl -k -H 'Content-Type: application/json' -X PUT --data-binary @xxx.json http://127.0.0.1:8001/api/v1/namespaces/xxx/finalize
+```
+
+# 删除处于Terminating的CR
+```shell
+# CRD类型的CR处于Terminating时删除
+kubectl patch crd/kubevirts.kubevirt.io --type=merge -p '{"metadata":{"finalizers":[]}}'
+```
