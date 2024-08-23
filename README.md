@@ -175,3 +175,8 @@ curl -k -H 'Content-Type: application/json' -X PUT --data-binary @xxx.json http:
 # CRD类型的CR处于Terminating时删除
 kubectl patch crd/kubevirts.kubevirt.io --type=merge -p '{"metadata":{"finalizers":[]}}'
 ```
+
+# 查看局域网中已用IP
+```shell
+nmap -sn 172.16.67.0/24 | grep "report for"
+```

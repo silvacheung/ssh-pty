@@ -82,6 +82,7 @@ spec:
         - HostDisk
         - ExpandDisks
         - BlockVolume
+        - GPU
     permittedHostDevices:
       pciHostDevices: []
       mediatedDevices: []
@@ -355,6 +356,49 @@ spec:
 EOF
 ```
 
+### 直通GPU
+- 提前安装Nvidia的GPU Operator
+- 然后设置获取可以使用的资源在KubeVirt的CR中进行设备注册
+```shell
+# 获取资源名称和数量
+kubectl get node <node> -o json | jq '.status.allocatable | with_entries(select(.key | startswith("nvidia.com/"))) | with_entries(select(.value != "0"))'
+
+#-----------------------------------------------------------------------------------------------------------------------
+# {
+#   "nvidia.com/GP107_GEFORCE_GTX_1050_TI": "1"
+# }
+
+# 获取设备的PCI设备ID
+lspci -nnk -d 10de:
+
+#-----------------------------------------------------------------------------------------------------------------------
+# 01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GP107 [GeForce GTX 1050 Ti] [10de:1c82] (rev a1)
+#        Subsystem: ASUSTeK Computer Inc. PH-GTX1050TI-4G [1043:8613]
+#        Kernel driver in use: vfio-pci
+#        Kernel modules: nvidia
+# 01:00.1 Audio device [0403]: NVIDIA Corporation GP107GL High Definition Audio Controller [10de:0fb9] (rev a1)
+#        Subsystem: ASUSTeK Computer Inc. GP107GL High Definition Audio Controller [1043:8613]
+#        Kernel driver in use: vfio-pci
+#        Kernel modules: snd_hda_intel
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# 注册直通设备
+# ...
+# permittedHostDevices:
+#   pciHostDevices:
+#   - externalResourceProvider: true
+#     pciVendorSelector: "10DE:1C82"
+#     resourceName: "nvidia.com/GP107_GEFORCE_GTX_1050_TI"
+# ...
+
+#-----------------------------------------------------------------------------------------------------------------------
+# 在VM使用GPU资源
+#devices:
+#  gpus:
+#  - name: gpu1
+#    deviceName: nvidia.com/GP107_GEFORCE_GTX_1050_TI
+```
 
 ### 安装QEMU
 - 安装文档：https://www.qemu.org/download/#linux

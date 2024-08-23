@@ -10,7 +10,7 @@
 sudo update-pciids
 
 # 查看是否支持CUDA
-sudo lspci | grep -i nvidia
+sudo lspci -vnn | grep -i nvidia
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 03:00.0 VGA compatible controller: NVIDIA Corporation TU116 [GeForce GTX 1660] (rev a1)
@@ -69,6 +69,73 @@ sudo apt upgrade
 sudo apt install linux-headers-$(uname -r) linux-image-$(uname -r)
 ```
 
+### 查看BIOS 中启用了虚拟化和 IOMMU 扩展（Intel VT-d 或 AMD IOMMU）并加载vfio-pci内核
+```shell
+# DMAR是否支持IOMMU
+IOMMU_DMAR="$(dmesg | grep -e DMAR | grep -e IOMMU)"
+# GRUB是否配置IOMMU
+IOMMU_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "_iommu=on")"
+# IOMMU是否已经开启
+IOMMU_ENABLED="$(dmesg | grep -e DMAR | grep -e IOMMU | grep 'DMAR: IOMMU enabled')"
+# CPU型号（AMD/AMD(R)/Intel/Intel(R)）
+CPU_BRAND="$(cat /proc/cpuinfo | grep 'model name' | sed -e 's/model name\t:/ /' | uniq | awk '{print $1}')"
+
+# 已经开启IOMMU
+if [ -n "${IOMMU_ENABLED}" ]; then
+  echo "系统已经开启IOMMU"
+  exit 0
+fi
+
+# 不支持IOMMU
+if [ -z "${IOMMU_DMAR}" ]; then
+  echo "请检查系统硬件是否支持虚拟化或者BIOS是否开启IOMMU（AMD）/VT-d（Intel）"
+  exit 0
+fi
+
+# 没有设置GRUB
+if [ -z "${IOMMU_GRUB}" ]; then
+  case "${CPU_BRAND}" in
+  "AMD")
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on/' /etc/default/grub
+    ;;
+  "AMD(R)")
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on/' /etc/default/grub
+    ;;
+  "Intel")
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on/' /etc/default/grub
+    ;;
+  "Intel(R)")
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on/' /etc/default/grub
+    ;;
+  *)
+    echo "不支持的CPU型号"
+    exit 0
+    ;;
+  esac
+fi
+
+# 重新构建grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# 加载vfio-pci内核模块
+modprobe vfio-pci
+lsmod | grep vfio
+cat > /etc/modules-load.d/vfio-pci.conf << EOF
+vfio-pci
+EOF
+
+# 加载vfio-pci内核模块
+modprobe vfio-pci && lsmod | grep vfio
+cat > /etc/modules-load.d/vfio-pci.conf << EOF
+vfio-pci
+EOF
+
+# 重启生效
+reboot
+
+# 再次执行确认是否生效
+```
+
 #### 6.安装NVIDIA CUDA工具包(网络安装，其他安装查看参考)，[参考](https://developer.nvidia.com/cuda-downloads)
 - 第三方参考: https://blog.imixs.org/2024/05/19/how-to-run-docker-with-gpu-support/
 - 使用开放版内核模块后，在使用helm安装时需要指定`--set driver.useOpenKernelModules=true`、`--set driver.rdma.useHostMofed=true`
@@ -112,7 +179,7 @@ sudo apt update
 sudo apt -y install cuda-toolkit-12-6
 sudo reboot
 
-# 安装NVIDIA驱动程序（二选一）
+# 安装NVIDIA驱动程序（二选一,推荐nvidia-open）
 # 1.安装开放内核模块版本
 sudo apt install -y nvidia-open
 # 2.安装旧版内核模块版本
@@ -208,12 +275,14 @@ kubectl label nodes <node> nvidia.com/gpu.deploy.driver=false --overwrite
 kubectl label node <node-name> --overwrite nvidia.com/gpu.workload.config=vm-passthrough
 
 # 安装Chart
-helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
-helm repo update nvidia
-helm install nvidia-gpu-operator nvidia/gpu-operator -n gpu-operator \
+helm repo add nvidia https://helm.ngc.nvidia.com/nvidia --force-update
+helm upgrade --install nvidia-gpu-operator nvidia/gpu-operator -n gpu-operator \
   --create-namespace \
   --set operator.cleanupCRD=true \
   --set driver.enabled=false \
+  --set driver.rdma.enabled=true \
+  --set driver.rdma.useHostMofed=true \
+  --set driver.useOpenKernelModules=true \
   --set sandboxWorkloads.enabled=true \
   --set toolkit.env[0].name=CONTAINERD_CONFIG \
   --set toolkit.env[0].value=/etc/containerd/config.toml \
@@ -291,4 +360,138 @@ kubectl.exe label node <node> nvidia.com/gpu.present-
 
 # 卸载 Operator 后，NVIDIA 驱动程序模块可能仍会加载。请重新启动节点或使用以下命令卸载它们
 sudo rmmod nvidia_modeset nvidia_uvm nvidia
+```
+
+### 部署GPU应用
+```shell
+# 部署ollama
+kubectl apply -f - <<EOF
+ ---
+ apiVersion: v1
+ kind: PersistentVolumeClaim
+ metadata:
+   name: ollama
+ spec:
+   storageClassName: nfs-subdir-external
+   accessModes:
+     - ReadWriteOnce
+   resources:
+     requests:
+       storage: 50Gi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ollama
+  labels:
+    name: ollama
+spec:
+  runtimeClassName: nvidia
+  containers:
+  - name: ollama
+    image: ollama/ollama:0.3.3
+    env:
+    - name: NVIDIA_DRIVER_CAPABILITIES
+      value: compute,utility
+    - name: NVIDIA_VISIBLE_DEVICES
+      value: all
+    - name: HF_ENDPOINT
+      value: "https://hf-mirror.com"
+    resources:
+      limits:
+        nvidia.com/gpu: 2
+    ports:
+    - containerPort: 11434
+      name: ollama-serve
+      protocol: TCP
+    volumeMounts:
+    - mountPath: /root/.ollama
+      name: ollama-data
+  volumes:
+  - name: ollama-data
+    persistentVolumeClaim:
+      claimName: ollama
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-serve
+spec:
+  ports:
+    - name: ollama-api
+      port: 11434
+      protocol: TCP
+      targetPort: ollama-serve
+  selector:
+    name: ollama
+  type: ClusterIP
+EOF
+
+# 部署open-webui
+kubectl apply -f - <<EOF
+ ---
+ apiVersion: v1
+ kind: PersistentVolumeClaim
+ metadata:
+   name: open-webui
+ spec:
+   storageClassName: nfs-subdir-external
+   accessModes:
+     - ReadWriteOnce
+   resources:
+     requests:
+       storage: 10Gi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: open-webui
+  labels:
+    name: open-webui
+spec:
+  containers:
+  - name: open-webui
+    image: ghcr.io/open-webui/open-webui:main
+    env:
+    - name: OLLAMA_BASE_URL
+      value: "http://ollama-serve.default.svc.cluster.local:11434"
+    - name: ENV
+      value: "prod"
+    - name: RAG_EMBEDDING_ENGINE
+      value: "ollama"
+    - name: HF_ENDPOINT
+      value: "https://hf-mirror.com"
+    volumeMounts:
+    - mountPath: /app/backend/data
+      name: open-webui-data
+    ports:
+    - containerPort: 8080
+      name: open-webui-http
+      protocol: TCP
+  volumes:
+  - name: open-webui-data
+    persistentVolumeClaim:
+      claimName: open-webui
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui
+  labels:
+    kubernetes.io/service-export: "nginx"
+    kubernetes.io/service-ssl: "38003"
+spec:
+  ports:
+    - name: open-webui
+      port: 38003
+      protocol: TCP
+      targetPort: open-webui-http
+  selector:
+    name: open-webui
+  type: ClusterIP
+EOF
 ```

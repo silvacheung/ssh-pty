@@ -24,7 +24,7 @@ sudo update-initramfs -u
 sudo lsmod | grep nouveau || true
 
 # 安装内核头文件
-sudo apt install linux-headers-$(uname -r)
+sudo apt install -y linux-headers-$(uname -r)
 sudo ls /usr/src/linux-headers-$(uname -r)
 
 # 添加仓库
