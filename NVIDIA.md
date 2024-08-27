@@ -75,7 +75,7 @@ sudo apt install linux-headers-$(uname -r) linux-image-$(uname -r)
 IOMMU_DMAR="$(dmesg | grep -e DMAR | grep -e IOMMU)"
 # GRUB是否配置IOMMU
 IOMMU_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "_iommu=on")"
-# IOMMU是否已经开启
+# IOMMU是否已经开启（ls /sys/kernel/iommu_groups）
 IOMMU_ENABLED="$(dmesg | grep -e DMAR | grep -e IOMMU | grep 'DMAR: IOMMU enabled')"
 # CPU型号（AMD/AMD(R)/Intel/Intel(R)）
 CPU_BRAND="$(cat /proc/cpuinfo | grep 'model name' | sed -e 's/model name\t:/ /' | uniq | awk '{print $1}')"

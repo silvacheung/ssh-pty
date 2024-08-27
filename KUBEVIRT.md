@@ -357,7 +357,8 @@ EOF
 ```
 
 ### 直通GPU
-- 提前安装Nvidia的GPU Operator
+- 开启系统IOMMU支持
+- 安装Nvidia的GPU Operator
 - 然后设置获取可以使用的资源在KubeVirt的CR中进行设备注册
 ```shell
 # 获取资源名称和数量

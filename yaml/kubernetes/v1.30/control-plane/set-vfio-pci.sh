@@ -46,11 +46,51 @@ fi
 # 重新构建grub.cfg
 grub-mkconfig -o /boot/grub/grub.cfg
 
-# 加载vfio-pci内核模块
-modprobe vfio-pci && lsmod | grep vfio
+# 绑定到vfio-pci
+declare -A VIDIDS
+for VGA in $(lspci -DD | grep NVIDIA | grep VGA | awk '{print $1}'); do
+    for DEVICE in $(ls /sys/bus/pci/devices/$VGA/iommu_group/devices); do
+        VENDOR_ID="$(cat /sys/bus/pci/devices/$DEVICE/vendor | sed 's/^0x//i')"
+        DEVICE_ID="$(cat /sys/bus/pci/devices/$DEVICE/device | sed 's/^0x//i')"
+        VIDIDS["$VENDOR_ID:$DEVICE_ID"]="$VENDOR_ID:$DEVICE_ID"
+        echo "$VGA >> $DEVICE >> [$VENDOR_ID:$DEVICE_ID]"
+        if [ -e /sys/bus/pci/devices/$DEVICE/driver/unbind ]; then
+            echo -n "$DEVICE" > /sys/bus/pci/devices/$DEVICE/driver/unbind
+        fi
+        if [ -e /sys/bus/pci/devices/$DEVICE/driver_override ]; then
+            echo -n "vfio-pci" > /sys/bus/pci/devices/$DEVICE/driver_override
+        fi
+    done
+done
+
+VFIO_PCI_IDS=""
+for KEY in "${!VIDIDS[@]}"; do
+    VFIO_PCI_IDS="$VFIO_PCI_IDS,$KEY"
+done
+
+cat > /etc/modprobe.d/vfio.conf << EOF
+options vfio-pci ids=$(echo $VFIO_PCI_IDS | sed 's/^,//i')
+EOF
+
+modprobe -r xhci_pci
+modprobe -r xhci_hcd
+modprobe -r nouveau
+sudo cat > /etc/modprobe.d/blacklist-drivers.conf << EOF
+blacklist xhci_pci
+blacklist xhci_hcd
+blacklist snd_hda_intel
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
+modprobe vfio
+modprobe vfio_pci
 cat > /etc/modules-load.d/vfio.conf << EOF
 vfio-pci
 EOF
+
+sudo apt install initramfs-tools -y
+sudo update-initramfs -u
 
 # 重启生效
 reboot
