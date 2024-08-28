@@ -67,24 +67,31 @@ spec:
     ksmConfiguration:
       nodeLabelSelector: {}
     developerConfiguration:
-      useEmulation: true
+      useEmulation: false
       featureGates:
-        - LiveMigrate
-        - Evict
-        - DataVolumes
-        - DisableMDEVConfiguration
-        - Snapshot
-        - PersistentReservation
-        - CPUManager
-        - CommonInstancetypesDeploymentGate
-        - VMExport
-        - HotplugVolumes
-        - HostDisk
-        - ExpandDisks
-        - BlockVolume
-        - GPU
+      - LiveMigrate
+      - Evict
+      - DataVolumes
+      - DisableMDEVConfiguration
+      - Snapshot
+      - PersistentReservation
+      - CPUManager
+      - CommonInstancetypesDeploymentGate
+      - VMExport
+      - HotplugVolumes
+      - HostDisk
+      - ExpandDisks
+      - BlockVolume
+      - GPU
+    network:
+      defaultNetworkInterface: "eth0"
+      permitBridgeInterfaceOnPodNetwork: true
+      permitSlirpInterface: true
     permittedHostDevices:
-      pciHostDevices: []
+      pciHostDevices:
+      - externalResourceProvider: true
+        pciVendorSelector: "10DE:1F08"
+         resourceName: "nvidia.com/TU106_GEFORCE_RTX_2060_REV__A"
       mediatedDevices: []
   customizeComponents: {}
   imagePullPolicy: IfNotPresent
@@ -237,8 +244,6 @@ spec:
     spec:
       domain:
         ioThreadsPolicy: auto
-        clock:
-          timezone: "Asia/Shanghai"
         devices:
           rng: {}
           disks:
@@ -254,6 +259,11 @@ spec:
             dedicatedIOThread: true
             disk:
               bus: virtio
+          interfaces:
+          - name: default
+            macAddress: "9e:89:49:37:3a:3c"
+            model: virtio
+            masquerade: {}
         #cpu:
         #  dedicatedCpuPlacement: true
         #  isolateEmulatorThread: true
@@ -264,6 +274,9 @@ spec:
           limits:
             cpu: 4
             memory: 8Gi
+      networks:
+      - name: default
+        pod: {}
       terminationGracePeriodSeconds: 0
       accessCredentials:
       - sshPublicKey:
@@ -287,7 +300,7 @@ spec:
             #cloud-config
             hostname: debian
             create_hostname_file: true
-            locale: en_US.UTF-8
+            locale: en_US
             timezone: Asia/Shanghai
             manage_resolv_conf: true
             resolv_conf:
@@ -304,18 +317,18 @@ spec:
               model: pc105
               variant: ""
               options: ""
-            #mounts:
-            #- [/dev/vdb, /mnt/data, auto, "defaults,nofail", "0", "2"]
             users:
             - name: root
               lock_passwd: false
               plain_text_passwd: pwd123
               sudo: ALL=(ALL) NOPASSWD:ALL
-            disable_root: false
-            ssh_pwauth: true
             password: pwd123
             chpasswd:
               expire: false
+            disable_root: false
+            ssh_pwauth: true
+            ssh_quiet_keygen: true
+            no_ssh_fingerprints: true
             ssh:
               emit_keys_to_console: false
             apt:
@@ -330,6 +343,12 @@ spec:
             package_reboot_if_required: false
             packages:
             - vim
+            disk_setup:
+              /dev/vdb: {layout: true, overwrite: true, table_type: mbr}
+            fs_setup:
+            - {device: /dev/vdb1, filesystem: ext4, label: fs3}
+            mounts:
+            - [/dev/vdb1, /mnt/data]
             runcmd:
             - sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
             - sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
@@ -464,4 +483,77 @@ qemu-system-x86_64 -m 1024 -smp 4 -cpu host -net nic -net user -machine type=q35
 
 # 杀死虚拟机
 kill $(ps -aux | grep qemu-system-x86_64 | head -n 1 | awk '{print $2}')
+```
+
+### 在虚拟集中安装`qemu-guest-agent`
+```shell
+# 安装包
+sudo apt install qemu-guest-agent -y
+
+# 修改service文件，会缺少设置导致不能开机启动
+cat >> /usr/lib/systemd/system/qemu-guest-agent.service <<EOF
+WantedBy=multi-user.target
+EOF
+
+# 启动service并设置开机自启
+systemctl start qemu-guest-agent
+systemctl enable qemu-guest-agent --now
+```
+
+# 在虚拟机中安装nvidia驱动和CUDA工具库
+```shell
+# 更新pci
+sudo apt update
+sudo update-pciids
+
+# 禁用nouveau
+modprobe --remove nouveau
+sudo cat > /etc/modprobe.d/blacklist-nouveau.conf << EOF
+blacklist nouveau
+options nouveau modeset=0
+EOF
+sudo update-initramfs -u
+
+# 安装内核头文件
+if [ ! -e /usr/src/linux-headers-$(uname -r) ]; then
+  sudo apt install -y linux-headers-$(uname -r)
+fi
+
+# 安装驱动
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get -y install cuda
+
+# 验证安装
+nvidia-smi
+```
+
+### 虚拟机安装`miniconda`(https://docs.anaconda.com/miniconda/)
+```shell
+# 安装miniconda3
+mkdir -p /usr/local/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /usr/local/miniconda3/miniconda.sh
+bash /usr/local/miniconda3/miniconda.sh -b -u -p /usr/local/miniconda3
+rm /usr/local/miniconda3/miniconda.sh
+
+# 激活conda环境
+source /usr/local/miniconda3/bin/activate
+
+# 退出conda环境
+source .bashrc
+```
+
+### 重置虚拟机中的cloud-init初始化信息
+```shell
+# 删除目录下文件即可
+sudo rm -rf /var/lib/cloud/*
+```
+
+### 虚拟机导出
+```shell
+
+
+
+
 ```

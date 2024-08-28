@@ -15,17 +15,18 @@ sudo uname -mr && cat /etc/*release
 sudo gcc --version
 
 # 禁用`nouveau`
+modprobe --remove nouveau
 sudo cat > /etc/modprobe.d/blacklist-nouveau.conf << EOF
 blacklist nouveau
 options nouveau modeset=0
 EOF
-modprobe --remove nouveau
 sudo update-initramfs -u
 sudo lsmod | grep nouveau || true
 
 # 安装内核头文件
-sudo apt install -y linux-headers-$(uname -r)
-sudo ls /usr/src/linux-headers-$(uname -r)
+if [ ! -e /usr/src/linux-headers-$(uname -r) ]; then
+  sudo apt install -y linux-headers-$(uname -r)
+fi
 
 # 添加仓库
 sudo curl -fSLO https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb
