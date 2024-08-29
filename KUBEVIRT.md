@@ -37,14 +37,20 @@ virt-host-validate qemu
 ### 在 Kubernetes上安装KubeVirt
 ```shell
 # 部署Operator
-export RELEASE=$(curl https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt)
-kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${RELEASE}/kubevirt-operator.yaml
+# 查看最新版本
+curl https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt
+
+# 部署kubevirt'CRD
+kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/v1.3.1/kubevirt-operator.yaml
 
 # 部署CDI
+# 查看最新版本
 export TAG=$(curl -s -w %{redirect_url} https://github.com/kubevirt/containerized-data-importer/releases/latest)
 export VERSION=$(echo ${TAG##*/})
-kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/$VERSION/cdi-operator.yaml
-kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/$VERSION/cdi-cr.yaml
+
+# 部署CDI'CRD和CR
+kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.60.2/cdi-operator.yaml
+kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.60.2/cdi-cr.yaml
 
 # 创建KubeVirt(默认)
 kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${RELEASE}/kubevirt-cr.yaml
@@ -64,38 +70,61 @@ metadata:
 spec:
   certificateRotateStrategy: {}
   configuration:
+    vmRolloutStrategy: Stage
     ksmConfiguration:
       nodeLabelSelector: {}
     developerConfiguration:
       useEmulation: false
       featureGates:
-      - LiveMigrate
-      - Evict
-      - DataVolumes
-      - DisableMDEVConfiguration
-      - Snapshot
-      - PersistentReservation
+      # workload
+      - HypervStrictCheck
       - CPUManager
       - CommonInstancetypesDeploymentGate
+      - Sidecar
+      - CustomResourceSubresources
+      # compute
+      - VMLiveUpdateFeatures
+      - AlignCPUs
+      - HostDevices
+      - NUMA
+      - VSOCK
+      - VMPersistentState
+      - AutoResourceLimitsGate
+      - DisableMDEVConfiguration
+      - GPU
+      # network
+      - HotplugNICs
+      - NetworkBindingPlugins
+      # storage
+      - Snapshot
+      - PersistentReservation
+      - BlockVolume
+      - ExpandDisks
+      - HostDisk
+      - DownwardMetrics
+      - ExperimentalVirtiofsSupport
+      - VolumesUpdateStrategy
       - VMExport
       - HotplugVolumes
-      - HostDisk
-      - ExpandDisks
-      - BlockVolume
-      - GPU
+      - DataVolumes
+      - BlockMultiQueue
+      - VolumeMigration
+      # debug
+      - ClusterProfiler
     network:
-      defaultNetworkInterface: "eth0"
       permitBridgeInterfaceOnPodNetwork: true
       permitSlirpInterface: true
     permittedHostDevices:
       pciHostDevices:
       - externalResourceProvider: true
         pciVendorSelector: "10DE:1F08"
-         resourceName: "nvidia.com/TU106_GEFORCE_RTX_2060_REV__A"
+        resourceName: "nvidia.com/TU106_GEFORCE_RTX_2060_REV__A"
       mediatedDevices: []
   customizeComponents: {}
   imagePullPolicy: IfNotPresent
-  workloadUpdateStrategy: {}
+  workloadUpdateStrategy:
+    workloadUpdateMethods:
+    - LiveMigrate
 EOF
 
 # 等待KubeVirt组件启动
@@ -104,6 +133,10 @@ kubectl -n kubevirt wait kv kubevirt --for condition=Available
 
 ### 删除KubeVirt
 ```shell
+# 首先删除CDI'CR和CRD（如果需要）
+kubectl delete -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.60.2/cdi-cr.yaml
+kubectl delete -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.60.2/cdi-operator.yaml
+
 # 要删除 KubeVirt，您应该首先删除KubeVirt自定义资源，然后删除 KubeVirt 操作员
 kubectl delete -n kubevirt kubevirt kubevirt --wait=true
 kubectl delete apiservices v1.subresources.kubevirt.io
@@ -246,17 +279,22 @@ spec:
         ioThreadsPolicy: auto
         devices:
           rng: {}
+          autoattachGraphicsDevice: false
+          blockMultiQueue: true
           disks:
           - name: cloudinitvolume
             dedicatedIOThread: true
+            cache: none
             disk:
               bus: virtio
           - name: systemvolume
             dedicatedIOThread: true
+            cache: none
             disk:
               bus: virtio
           - name: datavolume
             dedicatedIOThread: true
+            cache: none
             disk:
               bus: virtio
           interfaces:
@@ -268,6 +306,7 @@ spec:
         #  dedicatedCpuPlacement: true
         #  isolateEmulatorThread: true
         resources:
+          overcommitGuestOverhead: false
           requests:
             cpu: 4
             memory: 8Gi
@@ -352,6 +391,10 @@ spec:
             runcmd:
             - sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
             - sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+            - sed -i 's/^#PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+            - sed -i 's/^PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+            - sed -i 's/^#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+            - sed -i 's/^AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
             - systemctl restart sshd
             phone_home: {post: all, url: 'http://172.16.67.200:8000', tries: 1}
 
@@ -519,11 +562,16 @@ if [ ! -e /usr/src/linux-headers-$(uname -r) ]; then
   sudo apt install -y linux-headers-$(uname -r)
 fi
 
-# 安装驱动
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+# 添加库
+curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
 sudo dpkg -i cuda-keyring_1.1-1_all.deb
-sudo apt-get update
-sudo apt-get -y install cuda
+sudo apt update
+
+# 安装所有
+sudo apt -y install cuda
+
+# 安装运行时和驱动
+sudo apt -y cuda-runtime-12-6
 
 # 验证安装
 nvidia-smi
@@ -553,7 +601,38 @@ sudo rm -rf /var/lib/cloud/*
 ### 虚拟机导出
 ```shell
 
+```
 
+### 制作自定义镜像规则
+- 1.准备ubuntu16.04/18.04/20.04/22.04/24.04 基础镜像（cloud-ubuntu16.04.qcow2）
+- 2.准备安装了qemu-guest-agent/ssh允许root和密钥登录/pythonxx的镜像（cloud-ubuntu16.04-python3.0.qcow2）
+- 3.准备安装了对应显卡cuda和驱动的镜像（cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08.qcow2）
+- 4.准备安装了对应版本AI框架的镜像(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1.qcow2)
+- 5.基于cuda镜像制作出各种社区流行框架(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1-xxxxx.qcow2)
 
+### cuda-12-6安装
+```shell
+# 添加nvidia库
+sudo apt update
+sudo apt install -y --no-install-recommends gnupg2 curl ca-certificates
+sudo curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
+# 基础运行时镜像> 安装运行时
+sudo apt update
+sudo apt install -y --no-install-recommends cuda-runtime-12-6
+
+# 基础运行时镜像> 安装兼容包（可选）
+sudo apt install -y --no-install-recommends cuda-compat-12-6
+
+# 基础运行时镜像> 安装library
+sudo apt install -y --no-install-recommends libnpp-12-6=12.3.1.23-1
+sudo apt install -y --no-install-recommends libnccl2=2.22.3-1+cuda12.6
+
+# 基础运行时+cudnn镜像> 安装cudnn
+sudo apt install -y --no-install-recommends libcudnn9-cuda-12=9.3.0.75-1
+apt-mark hold libcudnn9-cuda-12
+
+# 基础运行时+dev镜像 > 安装开发库包
+sudo apt install -y --no-install-recommends cuda-libraries-dev-12-6
 ```

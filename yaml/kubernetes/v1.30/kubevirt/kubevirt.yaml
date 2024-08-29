@@ -1,0 +1,62 @@
+---
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  certificateRotateStrategy: {}
+  configuration:
+    vmRolloutStrategy: Stage
+    ksmConfiguration:
+      nodeLabelSelector: {}
+    developerConfiguration:
+      useEmulation: false
+      featureGates:
+      # workload
+      - HypervStrictCheck
+      - CPUManager
+      - CommonInstancetypesDeploymentGate
+      - Sidecar
+      - CustomResourceSubresources
+      # compute
+      - VMLiveUpdateFeatures
+      - AlignCPUs
+      - HostDevices
+      - NUMA
+      - VSOCK
+      - VMPersistentState
+      - AutoResourceLimitsGate
+      - DisableMDEVConfiguration
+      - GPU
+      # network
+      - HotplugNICs
+      - NetworkBindingPlugins
+      # storage
+      - Snapshot
+      - PersistentReservation
+      - BlockVolume
+      - ExpandDisks
+      - HostDisk
+      - DownwardMetrics
+      - ExperimentalVirtiofsSupport
+      - VolumesUpdateStrategy
+      - VMExport
+      - HotplugVolumes
+      - DataVolumes
+      - BlockMultiQueue
+      - VolumeMigration
+    network:
+      permitBridgeInterfaceOnPodNetwork: true
+      permitSlirpInterface: true
+    permittedHostDevices:
+      pciHostDevices:
+      - externalResourceProvider: true
+        pciVendorSelector: "10DE:1F08"
+        resourceName: "nvidia.com/TU106_GEFORCE_RTX_2060_REV__A"
+      mediatedDevices: []
+  customizeComponents: {}
+  imagePullPolicy: IfNotPresent
+  workloadUpdateStrategy:
+    workloadUpdateMethods:
+    - LiveMigrate

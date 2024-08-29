@@ -1,0 +1,181 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ssh-key-ubuntu-24-04
+  namespace: vm-platform
+type: Opaque
+data:
+  key1: c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBREFRQUJBQUFCQVFEVGdCM3BPelJuN09BdmJHemdJZjBtSng2SDlCeDVIeWtpRmdudGI4ajBQTzZuaWZLUkVBcmhld1pWRFBuN25lK2F2UWo0V05vaTUyNFgrdXpVRTZyU3diRGljVVgxOEdqbFo5dTlQTkMrTVZVWSszZC9JOUFIWEdBZEI2Q3dORStWbGt6OWZ2azNwcGNsZmdVUGI4Q0Zva0YxWnVlNGtKcElYV3VaLzAxTU1NbDZuMkZyWmhzbXJoTXdGRGpqVVdCdXRPRGdrQUhIS0x4UTh3TVlhZkhIeW93bkNQUklDNnZXZkFwdmRmcHFMRWNFRG1XaXBvUjk5UlFZdGNPcmFhWnBGSGMvbW9WNnVXdnRTTVh1MzJrODhiaFo4YVp5ZUpnYTBQdFVUTGNRVVlCb1JqWGgrQldMem1UZGhpMTg1U3o5WTVPcTdWY1FuMkgwcHhjY3R3M3ggcm9vdAo=
+  key2: c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBREFRQUJBQUFCQVFETjA1RVczR0M5WWs1Z2VpSThCVWt6dzVqaGZuRUROZFVFZEs3dWxrSW1kaG9FK2d6eVBvalRQWjZlckxJbVFBazY3d20wbjBCQnU4U2F0QjJOMDQwZmE0MjY3N0E0bUVaeS9SV2NDeUExeVBIQkRxTFhlUlhYNCtiT2tLYW5Qc3U5ZktGWkFUWkpYNjM1dGV2ZHRPS2FESTNZV0lReGdkcTlRbDVJaDJJbk0raUZHTjZLeXhHTzRaa0RIR0luQm1qMVhuSnBDUE1uOXhCMTVzSWUrejRmeXdyWk1DV2JmN3Byc2hGVHJwaVlCUkZpTk5JRS9UY0JEaThBQ0lKNEVQeFo3MkpDU1c0MTc0dHJIREY5MDJuN05FQ3dxdjFHMERMRTBESEd3VnE0L1NOOXM4SWYxdDF2Ym9kSzZWaVVxSkNZbHp0bDFoempjNVdFZHZVaDF5TUwgcm9vdA==
+
+---
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: system-disk-ubuntu-24-04
+  namespace: vm-platform
+spec:
+  storage:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: nfs-subdir-external
+  source:
+    http:
+      url: http://172.16.67.200:8000/ubuntu-24.04-server-cloudimg-amd64.img
+
+---
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: data-disk-ubuntu-24-04
+  namespace: vm-platform
+spec:
+  source:
+    blank: {}
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 50Gi
+    storageClassName: nfs-subdir-external
+
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: ubuntu-24-04
+  namespace: vm-platform
+spec:
+  running: true
+  template:
+    metadata:
+      namespace: vm-platform
+      labels:
+        app.kubernetes.io/name: ubuntu-24-04
+        app.kubernetes.io/instance: ubuntu-24-04
+        app.kubernetes.io/version: v1
+    spec:
+      domain:
+        ioThreadsPolicy: auto
+        devices:
+          rng: {}
+          autoattachGraphicsDevice: false
+          blockMultiQueue: true
+          disks:
+          - dedicatedIOThread: true
+            cache: none
+            name: system
+            disk:
+              bus: virtio
+          - dedicatedIOThread: true
+            cache: none
+            name: data
+            disk:
+              bus: virtio
+          - dedicatedIOThread: true
+            cache: none
+            name: cloudinit
+            disk:
+              bus: virtio
+          gpus:
+          - deviceName: nvidia.com/TU106_GEFORCE_RTX_2060_REV__A
+            name: gpu0
+          interfaces:
+          - name: default
+            macAddress: "9e:89:49:37:3a:3c"
+            masquerade: {}
+        resources:
+          overcommitGuestOverhead: false
+          requests:
+            cpu: 4
+            memory: 8Gi
+          limits:
+            cpu: 4
+            memory: 8Gi
+      networks:
+      - name: default
+        pod: {}
+      terminationGracePeriodSeconds: 180
+      accessCredentials:
+      - sshPublicKey:
+          source:
+            secret:
+              secretName: ssh-key-ubuntu-24-04
+          propagationMethod:
+            qemuGuestAgent:
+              users:
+              - root
+      volumes:
+      - name: system
+        dataVolume:
+          name: system-disk-ubuntu-24-04
+      - name: data
+        dataVolume:
+          name: data-disk-ubuntu-24-04
+      - name: cloudinit
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            hostname: cloudos
+            create_hostname_file: true
+            timezone: Asia/Shanghai
+            users:
+            - name: root
+              lock_passwd: false
+              plain_text_passwd: 123456
+              sudo: ALL=(ALL) NOPASSWD:ALL
+            password: 123456
+            chpasswd:
+              expire: false
+            disable_root: false
+            ssh_pwauth: true
+            ssh_quiet_keygen: true
+            no_ssh_fingerprints: true
+            ssh:
+              emit_keys_to_console: false
+            apt:
+              primary:
+              - arches: [default]
+                uri: http://mirrors.ustc.edu.cn/ubuntu/
+            runcmd:
+            - sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+            - sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+            - sed -i 's/^#PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+            - sed -i 's/^PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+            - sed -i 's/^#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+            - sed -i 's/^AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+            - systemctl restart sshd
+            disk_setup:
+              /dev/vdb: {layout: true, overwrite: true, table_type: mbr}
+            fs_setup:
+            - {device: /dev/vdb1, filesystem: ext4, label: fs3}
+            mounts:
+            - [/dev/vdb1, /mnt/data]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm-ubuntu-24-04
+  namespace: vm-platform
+  labels:
+    kubernetes.io/service-export: "nginx"
+    kubernetes.io/service-ssl: ""
+spec:
+  ports:
+    - port: 38222
+      name: ssh
+      protocol: TCP
+      targetPort: 22
+    - port: 38888
+      name: jupyter
+      protocol: TCP
+      targetPort: 8888
+  selector:
+    app.kubernetes.io/instance: ubuntu-24-04
+  type: ClusterIP
