@@ -51,7 +51,8 @@ metadata:
   name: ubuntu-24-04
   namespace: vm-platform
 spec:
-  running: true
+  #running: true
+  runStrategy: Manual
   template:
     metadata:
       namespace: vm-platform
@@ -67,28 +68,36 @@ spec:
           autoattachGraphicsDevice: false
           blockMultiQueue: true
           disks:
-          - dedicatedIOThread: true
+          - name: system
             cache: none
-            name: system
+            io: native
+            bootOrder: 1
+            dedicatedIOThread: false
             disk:
               bus: virtio
-          - dedicatedIOThread: true
+          - name: data
             cache: none
-            name: data
+            io: native
+            bootOrder: 2
+            #shareable: true
+            dedicatedIOThread: false
             disk:
               bus: virtio
-          - dedicatedIOThread: true
+          - name: cloud-init
             cache: none
-            name: cloudinit
+            io: native
+            bootOrder: 4
+            dedicatedIOThread: false
             disk:
               bus: virtio
           gpus:
           - deviceName: nvidia.com/TU106_GEFORCE_RTX_2060_REV__A
             name: gpu0
-          interfaces:
-          - name: default
-            macAddress: "9e:89:49:37:3a:3c"
-            masquerade: {}
+          #interfaces:
+          #- name: default
+          #  model: virtio
+          #  macAddress: ""
+          #  masquerade: {}
         resources:
           overcommitGuestOverhead: false
           requests:
@@ -97,9 +106,9 @@ spec:
           limits:
             cpu: 4
             memory: 8Gi
-      networks:
-      - name: default
-        pod: {}
+      #networks:
+      #- name: default
+      #  pod: {}
       terminationGracePeriodSeconds: 180
       accessCredentials:
       - sshPublicKey:
@@ -117,19 +126,33 @@ spec:
       - name: data
         dataVolume:
           name: data-disk-ubuntu-24-04
-      - name: cloudinit
+        #hostDisk:
+        #  Path: /data/vm/disks
+        #  Type: DiskOrCreate
+        #  Shared: false
+        #  Capacity: 10Gi
+      - name: cloud-init
         cloudInitNoCloud:
+          networkData: |
+            network:
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                  dhcp6: true
+                  match:
+                    name: enp*
           userData: |
             #cloud-config
             hostname: cloudos
             create_hostname_file: true
             timezone: Asia/Shanghai
             users:
-            - name: root
-              lock_passwd: false
-              plain_text_passwd: 123456
-              sudo: ALL=(ALL) NOPASSWD:ALL
-            password: 123456
+              - name: root
+                lock_passwd: false
+                plain_text_passwd: "123456"
+                sudo: ALL=(ALL) NOPASSWD:ALL
+            password: "123456"
             chpasswd:
               expire: false
             disable_root: false
@@ -140,22 +163,33 @@ spec:
               emit_keys_to_console: false
             apt:
               primary:
-              - arches: [default]
-                uri: http://mirrors.ustc.edu.cn/ubuntu/
+                - arches: [default]
+                  uri: http://mirrors.ustc.edu.cn/ubuntu/
             runcmd:
-            - sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
-            - sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
-            - sed -i 's/^#PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
-            - sed -i 's/^PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
-            - sed -i 's/^#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
-            - sed -i 's/^AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
-            - systemctl restart sshd
+              - sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+              - sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+              - sed -i 's/^#PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+              - sed -i 's/^PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+              - sed -i 's/^#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+              - sed -i 's/^AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+              - systemctl restart sshd || systemctl restart ssh
             disk_setup:
-              /dev/vdb: {layout: true, overwrite: true, table_type: mbr}
+              /dev/vdb: {layout: true, overwrite: true, table_type: gpt}
             fs_setup:
-            - {device: /dev/vdb1, filesystem: ext4, label: fs3}
+              - {device: /dev/vdb1, filesystem: ext4, label: fs3}
             mounts:
-            - [/dev/vdb1, /mnt/data]
+              - [/dev/vdb1, /mnt/data, auto, "defaults,nofail", "0", "0"]
+              - [172.16.67.253:/mnt/nas-data/publicdata, /mnt/public]
+            growpart:
+              devices: [/dev/vdb1]
+              ignore_growroot_disabled: false
+              mode: auto
+            write_files:
+              - path: /var/lib/cloud/scripts/per-boot/mnt-resize.sh
+                permissions: "0755"
+                content: |
+                  #!/bin/bash
+                  resize2fs -p -F /dev/vdb1
 
 ---
 apiVersion: v1

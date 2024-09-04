@@ -52,6 +52,35 @@ export VERSION=$(echo ${TAG##*/})
 kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.60.2/cdi-operator.yaml
 kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.60.2/cdi-cr.yaml
 
+# 创建CDI'CR(自定义)
+kubectl apply -f - <<EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDI
+metadata:
+  name: cdi
+spec:
+  config:
+    podResourceRequirements:
+      requests:
+        cpu: 100m
+        memory: 60M
+      limits:
+        cpu: 4000m
+        memory: 200M
+    featureGates:
+    - HonorWaitForFirstConsumer
+  imagePullPolicy: IfNotPresent
+  infra:
+    nodeSelector:
+      kubernetes.io/os: linux
+    tolerations:
+    - key: CriticalAddonsOnly
+      operator: Exists
+  workload:
+    nodeSelector:
+      kubernetes.io/os: linux
+EOF
+
 # 创建KubeVirt(默认)
 kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${RELEASE}/kubevirt-cr.yaml
 
@@ -539,6 +568,7 @@ WantedBy=multi-user.target
 EOF
 
 # 启动service并设置开机自启
+systemctl daemon-reload
 systemctl start qemu-guest-agent
 systemctl enable qemu-guest-agent --now
 ```
@@ -596,6 +626,9 @@ source .bashrc
 ```shell
 # 删除目录下文件即可
 sudo rm -rf /var/lib/cloud/*
+
+# 或者
+cloud-init clean
 ```
 
 ### 虚拟机导出
@@ -605,7 +638,7 @@ sudo rm -rf /var/lib/cloud/*
 
 ### 制作自定义镜像规则
 - 1.准备ubuntu16.04/18.04/20.04/22.04/24.04 基础镜像（cloud-ubuntu16.04.qcow2）
-- 2.准备安装了qemu-guest-agent/ssh允许root和密钥登录/pythonxx的镜像（cloud-ubuntu16.04-python3.0.qcow2）
+- 2.准备安装了qemu-guest-agent/ssh/nfs-common允许root和密钥登录/pythonxx的镜像（cloud-ubuntu16.04-python3.0.qcow2）
 - 3.准备安装了对应显卡cuda和驱动的镜像（cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08.qcow2）
 - 4.准备安装了对应版本AI框架的镜像(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1.qcow2)
 - 5.基于cuda镜像制作出各种社区流行框架(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1-xxxxx.qcow2)
