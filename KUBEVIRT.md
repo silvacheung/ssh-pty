@@ -638,10 +638,60 @@ cloud-init clean
 
 ### 制作自定义镜像规则
 - 1.准备ubuntu16.04/18.04/20.04/22.04/24.04 基础镜像（cloud-ubuntu16.04.qcow2）
-- 2.准备安装了qemu-guest-agent/ssh/nfs-common允许root和密钥登录/pythonxx的镜像（cloud-ubuntu16.04-python3.0.qcow2）
+- 2.准备安装了qemu-guest-agent/ssh/nfs-common允许root和密钥登录/python7/8/10/12的镜像（cloud-ubuntu16.04-python3.0.qcow2）
 - 3.准备安装了对应显卡cuda和驱动的镜像（cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08.qcow2）
 - 4.准备安装了对应版本AI框架的镜像(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1.qcow2)
 - 5.基于cuda镜像制作出各种社区流行框架(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1-xxxxx.qcow2)
+```shell
+# qemu-guest-agent
+apt update
+apt install qemu-guest-agent -y
+cat >> /usr/lib/systemd/system/qemu-guest-agent.service <<EOF
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl start qemu-guest-agent
+systemctl enable qemu-guest-agent --now
+
+# ssh
+sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+sed -i 's/^#PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+sed -i 's/^PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+sed -i 's/^#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+sed -i 's/^AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+
+# nfs-common
+apt install nfs-common -y
+
+# python
+# 进入python官网(https://www.python.org/downloads/source/)
+# 下载要安装的版本
+# --enable-optimizations优化二进制文件，但是构建会变慢
+# --prefix=/usr/local可以修改默认安装位置
+# altinstall安装不会覆盖系统python,不要使用标准的make install,因为它将覆盖默认的系统python3二进制文件
+apt upadte
+apt install -y curl build-essential libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev libffi-dev
+curl -LO https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
+tar -xvf Python-3.12.3.tgz
+cd Python-3.12.3
+./configure --enable-optimizations --prefix=/usr/local
+make && make altinstall
+
+# 创建软链使用指定版本
+update-alternatives --install /usr/bin/python python /usr/local/bin/python3.8 100
+update-alternatives --install /usr/bin/pip pip /usr/local/bin/pip3.8 100
+
+# 设置pip源
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 创建并生效python虚拟环境(可选，不然root账号会报警报)
+python -m venv env-name
+source env-name/bin/activate
+
+# 停用虚拟环境只需要在虚拟环境shell中执行命令
+deactivate
+```
 
 ### cuda-12-6安装
 ```shell
