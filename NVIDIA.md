@@ -362,6 +362,12 @@ kubectl.exe label node <node> nvidia.com/gpu.present-
 sudo rmmod nvidia_modeset nvidia_uvm nvidia
 ```
 
+### 查看GPU可安装的驱动
+```shell
+sudo apt install ubuntu-drivers-common
+sudo ubuntu-drivers devices
+```
+
 ### 部署GPU应用
 ```shell
 # 部署ollama

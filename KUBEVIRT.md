@@ -60,6 +60,8 @@ metadata:
   name: cdi
 spec:
   config:
+    insecureRegistries:
+    - my-private-registry-host:5000
     podResourceRequirements:
       requests:
         cpu: 100m
@@ -601,7 +603,7 @@ sudo apt update
 sudo apt -y install cuda
 
 # 安装运行时和驱动
-sudo apt -y cuda-runtime-12-6
+sudo apt -y install cuda-runtime-12-6
 
 # 验证安装
 nvidia-smi
@@ -638,7 +640,7 @@ cloud-init clean
 
 ### 制作自定义镜像规则
 - 1.准备ubuntu16.04/18.04/20.04/22.04/24.04 基础镜像（cloud-ubuntu16.04.qcow2）
-- 2.准备安装了qemu-guest-agent/ssh/nfs-common允许root和密钥登录/python7/8/10/12的镜像（cloud-ubuntu16.04-python3.0.qcow2）
+- 2.准备安装了qemu-guest-agent/ssh/nfs-common/允许root和密钥登录/python7/8/10/12的镜像（cloud-ubuntu16.04-python3.0.qcow2）
 - 3.准备安装了对应显卡cuda和驱动的镜像（cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08.qcow2）
 - 4.准备安装了对应版本AI框架的镜像(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1.qcow2)
 - 5.基于cuda镜像制作出各种社区流行框架(cloud-ubuntu16.04-python3.0-cuda12.6-10de1f08-pytorch1.3.1-xxxxx.qcow2)
@@ -670,11 +672,11 @@ apt install nfs-common -y
 # --enable-optimizations优化二进制文件，但是构建会变慢
 # --prefix=/usr/local可以修改默认安装位置
 # altinstall安装不会覆盖系统python,不要使用标准的make install,因为它将覆盖默认的系统python3二进制文件
-apt upadte
+apt update
 apt install -y curl build-essential libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev libffi-dev
 curl -LO https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
-tar -xvf Python-3.12.3.tgz
-cd Python-3.12.3
+tar -xvf Python-3.8.18.tgz
+cd Python-3.8.18
 ./configure --enable-optimizations --prefix=/usr/local
 make && make altinstall
 
@@ -683,7 +685,7 @@ update-alternatives --install /usr/bin/python python /usr/local/bin/python3.8 10
 update-alternatives --install /usr/bin/pip pip /usr/local/bin/pip3.8 100
 
 # 设置pip源
-pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple
 
 # 创建并生效python虚拟环境(可选，不然root账号会报警报)
 python -m venv env-name
@@ -718,4 +720,134 @@ apt-mark hold libcudnn9-cuda-12
 
 # 基础运行时+dev镜像 > 安装开发库包
 sudo apt install -y --no-install-recommends cuda-libraries-dev-12-6
+```
+
+### kubevirt镜像导出
+```yaml
+# 制作镜像时的虚拟机清单
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: image-gen
+spec:
+  runStrategy: Manual
+  dataVolumeTemplates:
+  - metadata:
+      name: image-gen
+    spec:
+      storage:
+        storageClassName: vm-host-path-csi
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+      source:
+        http:
+          url: http://172.16.67.200:8000/ubuntu-24.04-server-cloudimg-amd64.img
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: image-gen
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: lwy-cn-chengdu-1-std-43-172-16-67-12
+      domain:
+        ioThreadsPolicy: auto
+        devices:
+          rng: {}
+          autoattachGraphicsDevice: false
+          blockMultiQueue: true
+          disks:
+            - name: system
+              tag: vda
+              cache: none
+              io: native
+              bootOrder: 1
+              dedicatedIOThread: false
+              disk:
+                bus: virtio
+            - name: cloud-init
+              tag: vdc
+              cache: none
+              io: native
+              bootOrder: 4
+              dedicatedIOThread: false
+              disk:
+                bus: virtio
+          gpus:
+            - deviceName: nvidia.com/TU106_GEFORCE_RTX_2060_REV__A
+              name: gpu0
+        resources:
+          overcommitGuestOverhead: false
+          requests:
+            cpu: 4
+            memory: 8Gi
+          limits:
+            cpu: 4
+            memory: 8Gi
+      dnsPolicy: None
+      dnsConfig:
+        nameservers: [119.29.29.29, 10.16.0.10, 8.8.8.8]
+      terminationGracePeriodSeconds: 180
+      volumes:
+        - name: system
+          dataVolume:
+            name: image-gen
+        - name: cloud-init
+          cloudInitNoCloud:
+            networkData: |
+              network:
+                version: 2
+                ethernets:
+                  enp1s0:
+                    dhcp4: true
+                    dhcp6: true
+                    match:
+                      name: enp*
+            userData: |
+              #cloud-config
+              timezone: Asia/Shanghai
+              users:
+                - name: root
+                  lock_passwd: false
+                  plain_text_passwd: "123456"
+                  sudo: ALL=(ALL) NOPASSWD:ALL
+              password: "123456"
+              chpasswd:
+                expire: false
+              disable_root: false
+              ssh_pwauth: true
+              ssh_quiet_keygen: true
+              no_ssh_fingerprints: true
+              ssh:
+                emit_keys_to_console: false
+              apt:
+                primary:
+                  - arches: [default]
+                    uri: http://mirrors.ustc.edu.cn/ubuntu/
+              runcmd:
+                - sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+                - sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
+                - sed -i 's/^#PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+                - sed -i 's/^PubkeyAuthentication.*/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+                - sed -i 's/^#AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+                - sed -i 's/^AuthorizedKeysFile.*/AuthorizedKeysFile .ssh\/authorized_keys/g' /etc/ssh/sshd_config
+                - systemctl restart sshd || systemctl restart ssh
+```
+```shell
+# 导出的目标必须没有被其他资源使用
+# NFS导出时会产生权限不足错误
+virtctl vmexport download vmexportname \
+  --port-forward \
+  --local-port=5410 \
+  --format=gzip \
+  -n vm-platform \
+  --pvc=vm-disk-d0-xxx \
+  --output=./xxx.img.gz
+```
+```shell
+# 压缩镜像
+qemu-img convert -c -p -f raw -O qcow2 xxx.img xxx3.qcow2
 ```
