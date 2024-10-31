@@ -74,13 +74,43 @@ pyenv global <version>
 
 ```
 
-# 更新
+## 更新
 ```shell
 pyenv update
 ```
 
-# 卸载
+## 卸载
 ```shell
 # https://github.com/pyenv/pyenv?tab=readme-ov-file#uninstalling-pyenv
 # https://github.com/pyenv/pyenv-installer?tab=readme-ov-file#uninstall
+```
+
+# 安装新的Python替换系统Python
+```shell
+# 安装依赖
+apt update
+# apt install -y curl build-essential libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev libffi-dev
+apt install -y curl git build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+
+# 下载指定版本包
+# curl -LO https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
+curl -LO https://mirrors.aliyun.com/python-release/source/Python-3.8.18.tgz
+
+# 解压并编译安装
+tar -xvf Python-3.8.18.tgz
+cd Python-3.8.18
+./configure --enable-optimizations --with-lto --prefix=/usr/local
+# make && make install // 使用altinstall以避免覆盖系统默认的python版本
+make && make altinstall
+
+# 创建软链使用指定版本
+update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 100
+update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3.8 100
+update-alternatives --config python3
+```
+
+# 设置pip源
+```shell
+# 设置pip源
+pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com
 ```
