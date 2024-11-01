@@ -24,16 +24,16 @@ else
   if [ -z "${IOMMU_GRUB}" ]; then
     case "${CPU_BRAND}" in
     "AMD")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on video=efifb:off,vesafb:off/' /etc/default/grub
       ;;
     "AMD(R)")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on video=efifb:off,vesafb:off/' /etc/default/grub
       ;;
     "Intel")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on video=efifb:off,vesafb:off/' /etc/default/grub
       ;;
     "Intel(R)")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on video=efifb:off,vesafb:off/' /etc/default/grub
       ;;
     *)
       echo "不支持的CPU型号"
@@ -74,6 +74,7 @@ EOF
 
 modprobe -r xhci_pci
 modprobe -r xhci_hcd
+modprobe -r snd_hda_intel
 modprobe -r nouveau
 sudo cat > /etc/modprobe.d/blacklist-drivers.conf << EOF
 blacklist xhci_pci
@@ -85,8 +86,17 @@ EOF
 
 modprobe vfio
 modprobe vfio_pci
+modprobe vfio_virqfd
+modprobe vfio_iommu_type1
 cat > /etc/modules-load.d/vfio.conf << EOF
+vfio
 vfio-pci
+vfio_virqfd
+vfio_iommu_type1
+EOF
+
+cat > /etc/modprobe.d/kvm.conf << EOF
+options kvm ignore_msrs=1
 EOF
 
 sudo apt install initramfs-tools -y

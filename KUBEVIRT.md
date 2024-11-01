@@ -108,6 +108,7 @@ spec:
       useEmulation: false
       featureGates:
       # workload
+      - Root
       - HypervStrictCheck
       - CPUManager
       - CommonInstancetypesDeploymentGate
@@ -850,4 +851,24 @@ virtctl vmexport download vmexportname \
 ```shell
 # 压缩镜像
 qemu-img convert -c -p -f raw -O qcow2 xxx.img xxx3.qcow2
+```
+
+# 需要给节点node文件执行权限并开启Root功能门
+```shell
+chmod 777 /dev/kvm
+```
+
+# 如果主板开启UEFL则需要使用UEFI启动
+```yaml
+# ...
+spec:
+  domain:
+    firmware:
+      bootloader:
+        efi:
+          secureBoot: true
+    features:
+      smm:
+        enabled: true
+# ...
 ```
