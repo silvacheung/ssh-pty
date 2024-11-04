@@ -868,14 +868,14 @@ spec:
     firmware:
       bootloader:
         efi:
-          secureBoot: true
+          secureBoot: false
     features:
       smm:
         enabled: true
 # ...
 ```
 
-# 不要使用Nvidia的Gpu设备插件来直通Gpu
+# 不要使用Nvidia的Gpu设备插件来直通多Gpu
 
 ## 出现的问题
 - 在为vm指定多个相同型号的GPU时，会将Audio设备当作一个GPU来分配（可能因为他们在一个iommu组中）
@@ -898,7 +898,7 @@ lspci -nnk -d 10de:
 - 为要直通的设备起一个资源名，如RTX4090显卡就叫`nvidia.gpu/RTX4090`这种
 - 将资源名设置为节点的可分配资源
 ```shell
-kubectl patch node <name> --type='json' -p='[{"op": "add", "path": "/status/capacity/nvidia.com~1AD102-GEFORCE-RTX-4090", "value": "8"}]'
+kubectl patch node <name> --subresource='status' --type='json' -p='[{"op": "add", "path": "/status/capacity/nvidia.com~1AD102-GEFORCE-RTX-4090", "value": "8"}]'
 ```
 - 将`vendor-ID:device-ID`和资源名设置到直通列表
 ```yaml
