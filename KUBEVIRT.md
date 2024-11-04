@@ -148,6 +148,8 @@ spec:
       permitSlirpInterface: true
     permittedHostDevices:
       pciHostDevices:
+      # 注意，由于nvidia插件问题，这里需要设置`externalResourceProvider: false`,不能按文档设置`true`,否则会将同一iommu组显卡的Audio设备按GPU资源进行分配
+      # see https://github.com/kubevirt/kubevirt/issues/6459
       - externalResourceProvider: true
         pciVendorSelector: "10DE:1F08"
         resourceName: "nvidia.com/TU106_GEFORCE_RTX_2060_REV__A"
@@ -858,7 +860,7 @@ qemu-img convert -c -p -f raw -O qcow2 xxx.img xxx3.qcow2
 chmod 777 /dev/kvm
 ```
 
-# 如果主板开启UEFL则需要使用UEFI启动
+# 如果主板开启UEFI则需要使用UEFI启动
 ```yaml
 # ...
 spec:
@@ -872,3 +874,49 @@ spec:
         enabled: true
 # ...
 ```
+
+# 不要使用Nvidia的Gpu设备插件来直通Gpu
+
+## 出现的问题
+- 在为vm指定多个相同型号的GPU时，会将Audio设备当作一个GPU来分配（可能因为他们在一个iommu组中）
+
+## 解决方式
+- 自己为需要直通的设备设置`vfio-pci`驱动
+- 获取直通设备的`vendor-ID:device-ID`,下面示例的`[10de:2684]`为`VGA`,`[10de:22ba]`为`Audio`
+```shell
+lspci -nnk -d 10de:
+
+#b1:00.0 VGA compatible controller [0300]: NVIDIA Corporation AD102 [GeForce RTX 4090] [10de:2684] (rev a1)
+#        Subsystem: Gigabyte Technology Co., Ltd AD102 [GeForce RTX 4090] [1458:4104]
+#        Kernel driver in use: vfio-pci
+#        Kernel modules: nouveau
+#b1:00.1 Audio device [0403]: NVIDIA Corporation AD102 High Definition Audio Controller [10de:22ba] (rev a1)
+#        Subsystem: Gigabyte Technology Co., Ltd AD102 High Definition Audio Controller [1458:4104]
+#        Kernel driver in use: vfio-pci
+#        Kernel modules: snd_hda_intel
+```
+- 为要直通的设备起一个资源名，如RTX4090显卡就叫`nvidia.gpu/RTX4090`这种
+- 将资源名设置为节点的可分配资源
+```shell
+kubectl patch node <name> --type='json' -p='[{"op": "add", "path": "/status/capacity/nvidia.com~1AD102-GEFORCE-RTX-4090", "value": "8"}]'
+```
+- 将`vendor-ID:device-ID`和资源名设置到直通列表
+```yaml
+---
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  configuration:
+    # ...
+    permittedHostDevices:
+      pciHostDevices:
+      - externalResourceProvider: true
+        pciVendorSelector: "10de:2684"
+        resourceName: "nvidia.com/AD102-GEFORCE-RTX-4090"
+      mediatedDevices: []
+    # ...
+```
+- 在创建vm时即可指定`gpus`的设备名为`nvidia.com/AD102-GEFORCE-RTX-4090`
