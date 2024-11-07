@@ -2,9 +2,7 @@
 
 ## 安装GPU Operator
 
--
-
-如果不需要环境同时用于容器或者vGPU，则不需要安装Chart，只需要打标签`kubectl label node <node-name> --overwrite nvidia.com/gpu.workload.config=vm-passthrough`
+- 如果不需要环境同时用于容器或者vGPU，则不需要安装Chart，只需要打标签`kubectl label node <node-name> --overwrite nvidia.com/gpu.workload.config=vm-passthrough`
 
 ```shell
 # 给不需要安装Operands的节点打上标签
