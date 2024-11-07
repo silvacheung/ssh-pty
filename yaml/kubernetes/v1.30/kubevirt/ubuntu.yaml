@@ -93,6 +93,7 @@ spec:
         ioThreadsPolicy: auto
         devices:
           rng: {}
+          networkInterfaceMultiQueue: true
           autoattachGraphicsDevice: false
           blockMultiQueue: true
           disks:
