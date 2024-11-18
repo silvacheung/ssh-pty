@@ -2,6 +2,8 @@
 
 set -e
 
+export DEBIAN_FRONTEND=noninteractive
+
 {{- if ne (get "config.k8s.control_plane_endpoint.balancer") "" }}
 exit 0
 {{- end }}

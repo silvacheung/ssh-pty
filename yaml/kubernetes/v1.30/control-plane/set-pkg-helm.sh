@@ -2,6 +2,8 @@
 
 set -e
 
+export DEBIAN_FRONTEND=noninteractive
+
 if [ "$(command -v helm)" ]; then
   echo "安装Helm包 >> 已安装,跳过安装"
   exit 0

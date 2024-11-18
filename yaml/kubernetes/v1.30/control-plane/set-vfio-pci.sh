@@ -29,6 +29,8 @@
 
 set -e
 
+export DEBIAN_FRONTEND=noninteractive
+
 # DMAR是否支持IOMMU
 IOMMU_DMAR="$(dmesg | grep -e DMAR | grep -e IOMMU || true)"
 # GRUB是否配置IOMMU

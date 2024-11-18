@@ -2,6 +2,8 @@
 
 set -e
 
+export DEBIAN_FRONTEND=noninteractive
+
 APT_MIRROR={{ if get "config.apt.mirror" }}"{{ get "config.apt.mirror" }}"{{ else }}"http://mirrors.ustc.edu.cn"{{ end }}
 APT_USERNAME={{ if get "config.apt.username" }}"{{ get "config.apt.username" }}"{{ else }}""{{ end }}
 APT_PASSWORD={{ if get "config.apt.password" }}"{{ get "config.apt.password" }}"{{ else }}""{{ end }}

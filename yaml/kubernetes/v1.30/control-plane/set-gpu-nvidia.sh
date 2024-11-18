@@ -2,6 +2,8 @@
 
 set -e
 
+export DEBIAN_FRONTEND=noninteractive
+
 # 卸载重启（卸载后必须重启后再重新安装）
 #sudo apt autoremove nvidia* --purge -y || true
 #sudo apt autoremove cuda* --purge -y || true

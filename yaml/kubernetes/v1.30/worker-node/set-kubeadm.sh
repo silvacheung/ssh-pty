@@ -2,6 +2,8 @@
 
 set -e
 
+export DEBIAN_FRONTEND=noninteractive
+
 K8S_VERSION="{{ get "config.k8s.version" }}"
 DEB_VERSION="${K8S_VERSION%.*}"
 

@@ -2,6 +2,8 @@
 
 set -e
 
+export DEBIAN_FRONTEND=noninteractive
+
 # 确认系统虚拟化/开启IOMMU/加载vfio-pci内核模块
 # ----------------------------------------------------------------------------------------------------------------------
 IOMMU_DMAR="$(dmesg | grep -e DMAR | grep -e IOMMU || true)"
