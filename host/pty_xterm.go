@@ -7,16 +7,16 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
 var xterm = new(sync.Map)
@@ -277,11 +277,15 @@ func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) error {
 		if d == nil {
 			return nil
 		}
-		file := filepath.ToSlash(strings.TrimPrefix(p, filepath.Dir(src)))
-		file = path.Join(dst, file)
+		_, file := path.Split(filepath.ToSlash(src))
+		file = path.Join(filepath.ToSlash(dst), file)
 		if d.IsDir() {
 			fmt.Printf("创建远程目录[%s]:%s -> %s\n", hostname, p, file)
 			return xt.xterm.sftp.MkdirAll(file)
+		}
+
+		if err := xt.xterm.sftp.Remove(file); err != nil && !os.IsNotExist(err) {
+			return err
 		}
 
 		fmt.Printf("传输远程文件[%s]:%s -> %s\n", hostname, p, file)
