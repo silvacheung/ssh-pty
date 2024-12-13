@@ -5,7 +5,7 @@ hosts:
 
 config:
   k8s:
-    version: "1.30.0"
+    version: "1.31.4"
     cluster_name: "alpha"
     control_plane_endpoint:
       balancer: "haproxy"
@@ -35,7 +35,7 @@ config:
     version: "1.7.15"
     runc_version: "1.1.12"
     cni_version: "1.4.1"
-    sand_box_image: "registry.aliyuncs.com/google_containers/pause:3.9"
+    sand_box_image: "registry.aliyuncs.com/google_containers/pause:3.10"
     certs_d:
       docker.io:
         server: https://docker.io
