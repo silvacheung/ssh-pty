@@ -13,7 +13,7 @@ helm repo add cilium https://helm.cilium.io/
 # see https://docs.cilium.io/en/stable/operations/performance/tuning/
 echo "安装Cilium >> 执行cilium安装"
 helm upgrade --install cilium cilium/cilium \
-  --version 1.16.22 \
+  --version 1.16.4 \
   --namespace kube-system \
   --set operator.replicas=2 \
   --set ipam.mode=kubernetes \

@@ -118,6 +118,7 @@ rm -rf /etc/haproxy
 rm -rf /etc/keepalived
 rm -rf /var/lib/haproxy
 rm -rf /var/run/haproxy*
+rm -f /etc/apt/sources.list.d/kubernetes.list
 
 # reload
 systemctl daemon-reload
