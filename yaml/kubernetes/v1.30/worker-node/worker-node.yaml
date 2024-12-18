@@ -82,7 +82,7 @@ config:
         header:
           https://harbor.silvacheung.com:
             - Authorization = [ "Basic YWRtaW46MTIzNDU2" ]
-      registry.k8s.cluster:
+      app-oci.registry.cluster:
         server: https://harbor.silvacheung.com
         mirror:
           - address: https://harbor.silvacheung.com/v2/registry.k8s.cluster

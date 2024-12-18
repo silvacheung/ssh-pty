@@ -37,7 +37,7 @@ config:
     replicas: 1
     node_port_http: 30080
     node_port_https: 30443
-    external_url: https://localhost:30443
+    external_url: https://app-oci.registry.cluster:30443
     admin_password: Harbor12345
     storage_class_name: nfs-subdir-external
     storage_size_registry: 5Gi

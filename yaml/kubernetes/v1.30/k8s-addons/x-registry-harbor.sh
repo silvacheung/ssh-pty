@@ -14,7 +14,7 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set expose.type=nodePort \
   --set expose.tls.enabled=true \
   --set expose.tls.certSource=auto \
-  --set expose.tls.auto.commonName=localhost \
+  --set expose.tls.auto.commonName=app-oci.registry.cluster \
   --set expose.nodePort.ports.http.nodePort={{ get "config.harbor.node_port_http" }} \
   --set expose.nodePort.ports.https.nodePort={{ get "config.harbor.node_port_https" }} \
   --set externalURL={{ get "config.harbor.external_url" }} \
@@ -149,6 +149,32 @@ helm upgrade --install harbor-registry harbor/harbor \
   --set redis.internal.resources.requests.memory=100Mi \
   --set redis.internal.resources.limits.memory=1Gi
 
+# 创建外部服务
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-harbor
+  namespace: default
+  labels:
+    kubernetes.io/service-export: "nginx"
+    kubernetes.io/service-ssl: ""
+spec:
+  ports:
+  - name: https
+    port: 38001
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: harbor
+    component: nginx
+    release: harbor-registry
+  type: ClusterIP
+EOF
+
+# 增加deny配置
+kubectl get cm/harbor-registry-nginx -o yaml | sed 's/location \/ {/location \/devcenter-api-2.0 {\\n      deny all;\\n    }\\n\\n    location \/LICENSE {\\n      deny all;\\n    }\\n\\n    location \/license {\\n      deny all;\\n    }\\n\\n    location \/swagger.json {\\n      deny all;\\n    }\\n\\n    location \/ {/' | kubectl apply -f -
+kubectl rollout restart -n default deployment.apps/harbor-registry-nginx
 
 
 

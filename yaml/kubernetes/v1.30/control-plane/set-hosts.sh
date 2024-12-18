@@ -18,7 +18,7 @@ cat >>/etc/hosts<<EOF
 {{ get "config.k8s.control_plane_endpoint.address" }} {{ get "config.k8s.control_plane_endpoint.domain" }}
 {{- end }}
 {{- end }}
-{{ get "host.address" }} {{ get "host.hostname" }} {{ get "host.hostname" }}.cluster.local
+{{ get "host.address" }} {{ get "host.hostname" }} {{ get "host.hostname" }}.cluster.local app-oci.registry.cluster
 # K8S HOSTS END
 EOF
 

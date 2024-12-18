@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF
-# https://wiki.debian.org/VGAPassthrough
 
 # ---BIOS/UEFI 设置---
 # 对于英特尔，启用 VT-x / VT-d
@@ -41,13 +40,12 @@ IOMMU_ENABLED="$(dmesg | grep -e DMAR | grep -e IOMMU | grep 'DMAR: IOMMU enable
 # CPU型号（AMD/AMD(R)/Intel/Intel(R)）
 CPU_BRAND="$(cat /proc/cpuinfo | grep 'model name' | sed -e 's/model name\t:/ /' | uniq | awk '{print $1}' || true)"
 
-# 已经开启IOMMU
-if [ -n "${IOMMU_ENABLED}" ]; then
-  echo "系统已经开启IOMMU"
-else
+# 没有开启IOMMU
+if [ -z "${IOMMU_ENABLED}" ]; then
+  echo "系统没有开启IOMMU，开始配置GRUB"
   if [ -z "${IOMMU_DMAR}" ]; then
-    echo "请检查系统硬件是否支持虚拟化或者BIOS是否开启IOMMU（AMD）/VT-d（Intel）"
-    exit 0
+      echo "请检查系统硬件是否支持虚拟化或者BIOS是否开启IOMMU（AMD）/VT-d（Intel）"
+      exit 0
   fi
 
   # 没有设置GRUB
@@ -76,47 +74,7 @@ fi
 # 重新构建grub.cfg
 grub-mkconfig -o /boot/grub/grub.cfg
 
-# 绑定到vfio-pci（只直通VGA）
-#declare -A VIDIDS
-#for VGA in $(lspci -DD | grep NVIDIA | grep VGA | awk '{print $1}'); do
-#    VENDOR_ID="$(cat /sys/bus/pci/devices/$VGA/vendor | sed 's/^0x//i')"
-#    DEVICE_ID="$(cat /sys/bus/pci/devices/$VGA/device | sed 's/^0x//i')"
-#    VIDIDS["$VENDOR_ID:$DEVICE_ID"]="$VENDOR_ID:$DEVICE_ID"
-#    echo "$VGA >> [$VENDOR_ID:$DEVICE_ID]"
-#    if [ -e /sys/bus/pci/devices/$VGA/driver/unbind ]; then
-#        echo -n "$VGA" > /sys/bus/pci/devices/$VGA/driver/unbind
-#    fi
-#    if [ -e /sys/bus/pci/devices/$VGA/driver_override ]; then
-#        echo -n "vfio-pci" > /sys/bus/pci/devices/$VGA/driver_override
-#    fi
-#done
-
-# 绑定到vfio-pci（连同VGA和Audio一起直通）
-declare -A VIDIDS
-for VGA in $(lspci -DD | grep NVIDIA | grep VGA | awk '{print $1}'); do
-    for DEVICE in $(ls /sys/bus/pci/devices/$VGA/iommu_group/devices); do
-        VENDOR_ID="$(cat /sys/bus/pci/devices/$DEVICE/vendor | sed 's/^0x//i')"
-        DEVICE_ID="$(cat /sys/bus/pci/devices/$DEVICE/device | sed 's/^0x//i')"
-        VIDIDS["$VENDOR_ID:$DEVICE_ID"]="$VENDOR_ID:$DEVICE_ID"
-        echo "$VGA >> $DEVICE >> [$VENDOR_ID:$DEVICE_ID]"
-        if [ -e /sys/bus/pci/devices/$DEVICE/driver/unbind ]; then
-            echo -n "$DEVICE" > /sys/bus/pci/devices/$DEVICE/driver/unbind
-        fi
-        if [ -e /sys/bus/pci/devices/$DEVICE/driver_override ]; then
-            echo -n "vfio-pci" > /sys/bus/pci/devices/$DEVICE/driver_override
-        fi
-    done
-done
-
-VFIO_PCI_IDS=""
-for KEY in "${!VIDIDS[@]}"; do
-    VFIO_PCI_IDS="$VFIO_PCI_IDS,$KEY"
-done
-
-cat > /etc/modprobe.d/vfio.conf << EOF
-options vfio-pci ids=$(echo $VFIO_PCI_IDS | sed 's/^,//i') disable_vga=1
-EOF
-
+# 禁用模块
 modprobe -r xhci_pci
 modprobe -r xhci_hcd
 modprobe -r snd_hda_intel
@@ -129,6 +87,7 @@ blacklist nouveau
 options nouveau modeset=0
 EOF
 
+# 加载模块
 modprobe vfio
 modprobe vfio_pci
 modprobe vfio_virqfd
@@ -140,10 +99,36 @@ vfio_virqfd
 vfio_iommu_type1
 EOF
 
-cat > /etc/modprobe.d/kvm.conf << EOF
-options kvm ignore_msrs=1 report_ignored_msrs=0
-EOF
+# 配置vfio-pci驱动直通
+if [ -n "${IOMMU_ENABLED}" ]; then
+  echo "系统已经开启IOMMU，开始配置vfio-pci驱动直通"
+  declare -A VIDIDS
+  for VGA in $(lspci -DD | grep NVIDIA | grep VGA | awk '{print $1}'); do
+      for DEVICE in $(ls /sys/bus/pci/devices/$VGA/iommu_group/devices); do
+          VENDOR_ID="$(cat /sys/bus/pci/devices/$DEVICE/vendor | sed 's/^0x//i')"
+          DEVICE_ID="$(cat /sys/bus/pci/devices/$DEVICE/device | sed 's/^0x//i')"
+          VIDIDS["$VENDOR_ID:$DEVICE_ID"]="$VENDOR_ID:$DEVICE_ID"
+          echo "$VGA >> $DEVICE >> [$VENDOR_ID:$DEVICE_ID]"
+          if [ -e /sys/bus/pci/devices/$DEVICE/driver/unbind ]; then
+              echo -n "$DEVICE" > /sys/bus/pci/devices/$DEVICE/driver/unbind
+          fi
+          if [ -e /sys/bus/pci/devices/$DEVICE/driver_override ]; then
+              echo -n "vfio-pci" > /sys/bus/pci/devices/$DEVICE/driver_override
+          fi
+      done
+  done
 
+  VFIO_PCI_IDS=""
+  for KEY in "${!VIDIDS[@]}"; do
+      VFIO_PCI_IDS="$VFIO_PCI_IDS,$KEY"
+  done
+
+  cat > /etc/modprobe.d/vfio.conf << EOF
+options vfio-pci ids=$(echo $VFIO_PCI_IDS | sed 's/^,//i') disable_vga=1
+EOF
+fi
+
+# 更新初始化内存文件系统
 sudo apt install initramfs-tools -y
 sudo update-initramfs -u
 

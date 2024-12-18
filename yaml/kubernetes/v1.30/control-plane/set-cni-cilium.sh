@@ -24,7 +24,6 @@ helm upgrade --install cilium cilium/cilium \
   --set k8sServicePort={{ get "config.k8s.control_plane_endpoint.port" }} \
   --set kubeProxyReplacement=true \
   --set kubeProxyReplacementHealthzBindAddr=0.0.0.0:10256 \
-  --set containerRuntime.integration=containerd \
   --set bandwidthManager.enabled=true \
   --set bandwidthManager.bbr=true \
   --set localRedirectPolicy=true \
@@ -44,7 +43,6 @@ helm upgrade --install cilium cilium/cilium \
   --set externalIPs.enabled=true \
   --set bpf.masquerade=true \
   --set bpf.lbExternalClusterIP=true \
-  --set bpf.mapDynamicSizeRatio=0.0025 \
   --set bpf.lbMapMax=131072 \
   --set bpf.authMapMax=524288 \
   --set bpf.ctAnyMax=524288 \
