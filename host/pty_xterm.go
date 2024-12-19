@@ -273,17 +273,18 @@ func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) error {
 	}
 
 	hostname := xt.xterm.host.Hostname(ctx)
+	dst = filepath.ToSlash(dst)
+	fmt.Printf("创建远程目录[%s]: %s \n", hostname, dst)
+	if err := xt.xterm.sftp.MkdirAll(dst); err != nil {
+		return err
+	}
+
 	return filepath.WalkDir(src, func(p string, d fs.DirEntry, e error) error {
 		if d == nil {
 			return nil
 		}
 		_, file := path.Split(filepath.ToSlash(src))
 		file = path.Join(filepath.ToSlash(dst), file)
-		if d.IsDir() {
-			fmt.Printf("创建远程目录[%s]:%s -> %s\n", hostname, p, file)
-			return xt.xterm.sftp.MkdirAll(file)
-		}
-
 		if err := xt.xterm.sftp.Remove(file); err != nil && !os.IsNotExist(err) {
 			return err
 		}
