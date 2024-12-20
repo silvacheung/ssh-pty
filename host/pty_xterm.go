@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -267,30 +268,49 @@ type XtermSftp struct {
 }
 
 // Copy copy src file or dir to dst dir
-func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) error {
+func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) (err error) {
 	if xt.xterm.err != nil {
 		return xt.xterm.err
 	}
 
-	hostname := xt.xterm.host.Hostname(ctx)
+	// 格式化路径并获取需要替换的路径fix
+	src = filepath.ToSlash(src)
 	dst = filepath.ToSlash(dst)
+	dst = path.Clean(dst)
+	fix := path.Dir(src)
+
+	// 创建远程工作目录
+	hostname := xt.xterm.host.Hostname(ctx)
 	fmt.Printf("创建远程目录[%s]: %s \n", hostname, dst)
-	if err := xt.xterm.sftp.MkdirAll(dst); err != nil {
+	if err = xt.xterm.sftp.MkdirAll(dst); err != nil {
 		return err
 	}
 
-	return filepath.WalkDir(src, func(p string, d fs.DirEntry, e error) error {
+	// 拷贝本地文件到远程工作目录中
+	// 如果src的目录以'/'结尾,则拷贝目录下的所有文件到dst目录
+	// 如果src的目录非'/'结尾,则拷贝整个目录自身到远程dst目录
+	return filepath.WalkDir(src, func(p string, d fs.DirEntry, e error) (err error) {
 		if d == nil {
-			return nil
-		}
-		_, file := path.Split(filepath.ToSlash(src))
-		file = path.Join(filepath.ToSlash(dst), file)
-		if err := xt.xterm.sftp.Remove(file); err != nil && !os.IsNotExist(err) {
-			return err
+			return
 		}
 
-		fmt.Printf("传输远程文件[%s]:%s -> %s\n", hostname, p, file)
-		dstFile, err := xt.xterm.sftp.Create(file)
+		p = filepath.ToSlash(p)
+		f := path.Join(dst, strings.TrimPrefix(p, fix))
+
+		if d.IsDir() {
+			if dir := path.Clean(f); dir != dst {
+				fmt.Printf("创建远程目录[%s]: %s -> %s\n", hostname, p, f)
+				err = xt.xterm.sftp.MkdirAll(dir)
+			}
+			return
+		}
+
+		if err = xt.xterm.sftp.Remove(f); err != nil && !os.IsNotExist(err) {
+			return
+		}
+
+		fmt.Printf("传输远程文件[%s]: %s -> %s\n", hostname, p, f)
+		dstFile, err := xt.xterm.sftp.Create(f)
 		if err != nil {
 			return err
 		}
@@ -303,6 +323,6 @@ func (xt *XtermSftp) Copy(ctx context.Context, src, dst string) error {
 		defer srcFile.Close()
 
 		_, err = io.Copy(dstFile, srcFile)
-		return err
+		return
 	})
 }
