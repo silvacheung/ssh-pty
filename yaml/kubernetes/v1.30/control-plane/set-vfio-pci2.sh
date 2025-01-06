@@ -42,7 +42,7 @@ CPU_BRAND="$(cat /proc/cpuinfo | grep 'model name' | sed -e 's/model name\t:/ /'
 # 支持的巨页大小
 HUGEPAGE_2M="$(cat /proc/meminfo | grep 'Hugepagesize:' | grep '2048 kB' | awk '{print$2}' || true)"
 # 是否已开启巨页
-HUGEPAGE_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "hugepagesz=2M hugepages=" || true)"
+HUGEPAGE_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "hugepagesz=2M" || true)"
 
 # 配置受支持2M巨页
 if [[ "${HUGEPAGE_2M}" -eq "2048" && -z "${HUGEPAGE_GRUB}" ]]; then
