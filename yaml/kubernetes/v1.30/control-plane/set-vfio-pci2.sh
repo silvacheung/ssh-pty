@@ -39,6 +39,17 @@ IOMMU_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "_iommu=o
 IOMMU_ENABLED="$(dmesg | grep -e DMAR | grep -e IOMMU | grep 'DMAR: IOMMU enabled' || true)"
 # CPU型号（AMD/AMD(R)/Intel/Intel(R)）
 CPU_BRAND="$(cat /proc/cpuinfo | grep 'model name' | sed -e 's/model name\t:/ /' | uniq | awk '{print $1}' || true)"
+# 支持的巨页大小
+HUGEPAGE_2M="$(cat /proc/meminfo | grep 'Hugepagesize:' | grep '2048 kB' | awk '{print$2}' || true)"
+# 是否已开启巨页
+HUGEPAGE_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "hugepagesz=2M hugepages=" || true)"
+
+# 配置受支持2M巨页
+if [[ "${HUGEPAGE_2M}" -eq "2048" && -z "${HUGEPAGE_GRUB}" ]]; then
+  MEMORY="$(free -m | grep 'Mem:' | awk '{print$2}' || true)"
+  let HUGEPAGE_2M_SIZE=($MEMORY / 10 * 9 / 2)
+  sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& hugepagesz=2M hugepages='$HUGEPAGE_2M_SIZE'/' /etc/default/grub
+fi
 
 # 没有开启IOMMU
 if [ -z "${IOMMU_ENABLED}" ]; then
