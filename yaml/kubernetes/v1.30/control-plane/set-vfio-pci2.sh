@@ -90,16 +90,16 @@ if [ -z "${IOMMU_ENABLED}" ]; then
   if [ -z "${IOMMU_GRUB}" ]; then
     case "${CPU_BRAND}" in
     "AMD")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& nofb amd_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
       ;;
     "AMD(R)")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& amd_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& nofb amd_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
       ;;
     "Intel")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& nofb intel_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
       ;;
     "Intel(R)")
-      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& intel_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& nofb intel_iommu=on iommu=pt video=efifb:off,vesafb:off,simplefb:off pcie_acs_override=downstream,multifunction/' /etc/default/grub
       ;;
     *)
       echo "不支持的CPU型号"
