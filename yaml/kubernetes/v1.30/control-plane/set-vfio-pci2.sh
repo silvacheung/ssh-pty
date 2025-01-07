@@ -39,16 +39,43 @@ IOMMU_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "_iommu=o
 IOMMU_ENABLED="$(dmesg | grep -e DMAR | grep -e IOMMU | grep 'DMAR: IOMMU enabled' || true)"
 # CPU型号（AMD/AMD(R)/Intel/Intel(R)）
 CPU_BRAND="$(cat /proc/cpuinfo | grep 'model name' | sed -e 's/model name\t:/ /' | uniq | awk '{print $1}' || true)"
-# 支持的巨页大小
-HUGEPAGE_2M="$(cat /proc/meminfo | grep 'Hugepagesize:' | grep '2048 kB' | awk '{print$2}' || true)"
 # 是否已开启巨页
-HUGEPAGE_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "hugepagesz=2M" || true)"
+HUGEPAGE_GRUB="$(cat /etc/default/grub | grep "GRUB_CMDLINE_LINUX" | grep "hugepagesz=" || true)"
 
-# 配置受支持2M巨页
-if [[ "${HUGEPAGE_2M}" -eq "2048" && -z "${HUGEPAGE_GRUB}" ]]; then
-  MEMORY="$(free -m | grep 'Mem:' | awk '{print$2}' || true)"
-  let HUGEPAGE_2M_SIZE=($MEMORY / 10 * 9 / 2)
-  sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& hugepagesz=2M hugepages='$HUGEPAGE_2M_SIZE'/' /etc/default/grub
+if [ -n "${HUGEPAGE_GRUB}" ]; then
+  echo "2M/1G巨页GRUB已配置"
+fi
+
+# 巨页设置:https://www.kernel.org/doc/html/latest/admin-guide/mm/hugetlbpage.html
+if [ -z "${HUGEPAGE_GRUB}" ]; then
+  HUGEPAGE_SIZE=""
+  if [ -n "$(cat /proc/cpuinfo | grep pse | head -n 1 || true)" ]; then
+    HUGEPAGE_SIZE="2M"
+  fi
+
+  if [ -n "$(cat /proc/cpuinfo | grep pse | grep pdpe1gb | head -n 1 || true)" ]; then
+    HUGEPAGE_SIZE="1G"
+  fi
+
+  case "${HUGEPAGE_SIZE}" in
+  "2M")
+    let MEMORY_MB="$(free -m | grep 'Mem:' | awk '{print$7}' || true)"
+    let HUGEPAGE_PAGE=(${MEMORY_MB} / 10 * 8 / 2)
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& default_hugepagesz='${HUGEPAGE_SIZE}' hugepages='${HUGEPAGE_PAGE}' hugetlb_free_vmemmap=on/' /etc/default/grub
+    mkdir -p /mnt/huge/2M
+    mount -t hugetlbfs -o pagesize=2M none /mnt/huge/2M
+    ;;
+  "1G")
+    let MEMORY_MB="$(free -m | grep 'Mem:' | awk '{print$7}' || true)"
+    let HUGEPAGE_PAGE=(${MEMORY_MB} / 10 * 8 / 1024)
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& default_hugepagesz='${HUGEPAGE_SIZE}' hugepages='${HUGEPAGE_PAGE}' hugetlb_free_vmemmap=on/' /etc/default/grub
+    mkdir -p /mnt/huge/1G
+    mount -t hugetlbfs -o pagesize=1G none /mnt/huge/1G
+    ;;
+  *)
+    echo "CPU不支持的2M/1G巨页"
+    ;;
+  esac
 fi
 
 # 没有开启IOMMU
