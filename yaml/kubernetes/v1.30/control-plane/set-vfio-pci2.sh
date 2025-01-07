@@ -60,16 +60,16 @@ if [ -z "${HUGEPAGE_GRUB}" ]; then
   case "${HUGEPAGE_SIZE}" in
   "2M")
     echo "开始设置2M巨页"
-    MEMORY_MB="$(free -m | grep 'Mem:' | awk '{print$7}' || true)"
-    let HUGEPAGE_PAGE=${MEMORY_MB}/10*8/2
+    MEMORY_MB=$(free -m | awk 'NR==2' | awk '{print$7}')
+    HUGEPAGE_PAGE=$((${MEMORY_MB} / 10 * 8 / 2))
     sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& default_hugepagesz='${HUGEPAGE_SIZE}' hugepages='${HUGEPAGE_PAGE}' hugetlb_free_vmemmap=on/' /etc/default/grub
     mkdir -p /mnt/huge/2M
     mount -t hugetlbfs -o pagesize=2M none /mnt/huge/2M
     ;;
   "1G")
     echo "开始设置1G巨页"
-    MEMORY_MB="$(free -m | grep 'Mem:' | awk '{print$7}' || true)"
-    let HUGEPAGE_PAGE=${MEMORY_MB}/10*8/1024
+    MEMORY_MB=$(free -m | awk 'NR==2' | awk '{print$7}')
+    HUGEPAGE_PAGE=$((${MEMORY_MB} / 10 * 8 / 1024))
     sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& default_hugepagesz='${HUGEPAGE_SIZE}' hugepages='${HUGEPAGE_PAGE}' hugetlb_free_vmemmap=on/' /etc/default/grub
     mkdir -p /mnt/huge/1G
     mount -t hugetlbfs -o pagesize=1G none /mnt/huge/1G
